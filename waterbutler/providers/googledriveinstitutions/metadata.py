@@ -23,7 +23,7 @@ class BaseGoogleDriveInstitutionsMetadata(metadata.BaseMetadata):
         values to help the provider to recognize them.  See the **Revisions** section of the
         GoogleDrivInstitutionseProvider docstring."""
 
-        return {'revisionId': self.raw.get('version')}
+        return {'revisionId': self.raw['version']}
 
 
 class GoogleDriveInstitutionsFolderMetadata(BaseGoogleDriveInstitutionsMetadata, metadata.BaseFolderMetadata):
@@ -67,11 +67,11 @@ class GoogleDriveInstitutionsFileMetadata(BaseGoogleDriveInstitutionsMetadata, m
 
     @property
     def name(self):
-        title = self._file_title
+        name = self._file_name
         if self.is_google_doc:
             ext = utils.get_extension(self.raw)
-            title += ext
-        return title
+            name += ext
+        return name
 
     @property
     def path(self):
@@ -108,8 +108,7 @@ class GoogleDriveInstitutionsFileMetadata(BaseGoogleDriveInstitutionsMetadata, m
 
     @property
     def etag(self):
-        # return self.raw.get('version')
-        return self.raw['version']
+        return self.raw['modifiedTime']
 
     @property
     def extra(self):
@@ -131,14 +130,14 @@ class GoogleDriveInstitutionsFileMetadata(BaseGoogleDriveInstitutionsMetadata, m
 
     @property
     def export_name(self):
-        title = self._file_title
+        name = self._file_name
         if self.is_google_doc:
             ext = utils.get_download_extension(self.raw)
-            title += ext
-        return title
+            name += ext
+        return name
 
     @property
-    def _file_title(self):
+    def _file_name(self):
         return self.raw['name']
 
 
@@ -168,7 +167,7 @@ class GoogleDriveInstitutionsFileRevisionMetadata(GoogleDriveInstitutionsFileMet
         return {'md5': self.raw['md5Checksum']}
 
     @property
-    def _file_title(self):
+    def _file_name(self):
         return self.raw.get('originalFilename', self._path.name)
 
 
