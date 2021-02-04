@@ -65,6 +65,7 @@ setup(
             'nextcloud = waterbutler.providers.nextcloud:NextcloudProvider',
             'iqbrims = waterbutler.providers.iqbrims:IQBRIMSProvider',
             'dropboxbusiness = waterbutler.providers.dropboxbusiness:DropboxBusinessProvider',
+            'googledriveinstitutions = waterbutler.providers.googledrive:GoogleDriveInstitutionsProvider',
         ],
     },
 )
