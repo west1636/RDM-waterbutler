@@ -144,7 +144,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             await dest_provider.delete(dest_path)
 
         async with self.request(
-            'UPDATE', # 'PATCH',
+            'UPDATE',
             self.build_url('files', src_path.identifier),
             headers={
                 'Content-Type': 'application/json'
@@ -181,8 +181,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         async with self.request(
             'POST',
             self.build_url('files', src_path.identifier, 'copy',
-                            fields='id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,' \
-                                'originalFilename,md5Checksum,exportLinks,capabilities(canEdit)'),
+                            fields='id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit)'),
             headers={'Content-Type': 'application/json'},
             data=json.dumps({
                 'parents': [{
@@ -225,8 +224,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
 
         download_resp = await self.make_request(
             'GET',
-            self.build_url('files', path.identifier, alt='media') or
-                utils.get_export_link(metadata.raw),
+            self.build_url('files', path.identifier, alt='media') or utils.get_export_link(metadata.raw),
             range=range,
             expects=(200, 206),
             throws=exceptions.DownloadError,
@@ -589,7 +587,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
                                path: WaterButlerPath,
                                raw: bool=False) -> List[Union[BaseGoogleDriveInstitutionsMetadata, dict]]:
         query = self._build_query(path.identifier)
-        built_url = self.build_url('files', q=query, alt='json', pageSize=1000, # v2:maxResults
+        built_url = self.build_url('files', q=query, alt='json', pageSize=1000,
                                     fields='nextPageToken,files')
         full_resp = []
         while built_url:
@@ -657,8 +655,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
                                 fields='id,mimeType,modifiedTime,md5Checksum,size,exportLinks')
         else:
             url = self.build_url('files', path.identifier,
-                                fields='id,name,version,size,modifiedTime,createdTime,mimeType,' \
-                                    'md5Checksum,originalFilename,exportLinks,ownedByMe,capabilities(canEdit)')
+                                fields='id,name,version,size,modifiedTime,createdTime,mimeType,md5Checksum,originalFilename,exportLinks,ownedByMe,capabilities(canEdit)')
 
         async with self.request(
             'GET',
@@ -668,7 +665,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         ) as resp:
             try:
                 data = await resp.json()
-            except:  # some 404s return a string instead of json
+            except Exception:  # some 404s return a string instead of json
                 data = await resp.read()
 
         if resp.status != 200:
