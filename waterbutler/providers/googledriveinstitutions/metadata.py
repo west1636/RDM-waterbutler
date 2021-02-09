@@ -23,7 +23,7 @@ class BaseGoogleDriveInstitutionsMetadata(metadata.BaseMetadata):
         values to help the provider to recognize them.  See the **Revisions** section of the
         GoogleDrivInstitutionseProvider docstring."""
 
-        return {'revisionId': self.raw['version']}
+        return {'revisionId': self.raw.get('version')}
 
 
 class GoogleDriveInstitutionsFolderMetadata(BaseGoogleDriveInstitutionsMetadata, metadata.BaseFolderMetadata):
