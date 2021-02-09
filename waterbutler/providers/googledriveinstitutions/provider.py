@@ -593,7 +593,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
                 ])
                 nextPageToken = resp_json.get('nextPageToken')
                 if nextPageToken:
-                    params = {'q': query, 'alt': 'json', 'pageSize': 1000, 'pageToken':nextPageToken, 'fields': 'nextPageToken,files(id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit))'}
+                    params = {'q': query, 'alt': 'json', 'pageSize': 1000, 'pageToken': nextPageToken, 'fields': 'nextPageToken,files(id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit))'}
                 else:
                     built_url = None
         return full_resp
