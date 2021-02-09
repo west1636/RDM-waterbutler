@@ -23,7 +23,7 @@ class BaseGoogleDriveInstitutionsMetadata(metadata.BaseMetadata):
         values to help the provider to recognize them.  See the **Revisions** section of the
         GoogleDrivInstitutionseProvider docstring."""
 
-        return {'revisionId': self.raw['version']}
+        return {'revisionId': self.raw.get('version')}
 
 
 class GoogleDriveInstitutionsFolderMetadata(BaseGoogleDriveInstitutionsMetadata, metadata.BaseFolderMetadata):
@@ -55,10 +55,10 @@ class GoogleDriveInstitutionsFolderMetadata(BaseGoogleDriveInstitutionsMetadata,
 
 class GoogleDriveInstitutionsFileMetadata(BaseGoogleDriveInstitutionsMetadata, metadata.BaseFileMetadata):
     """The metadata for a single file on Google Drive.  This class expects a the ``raw``
-    property to be the response[1] from the GDrive v2 file metadata endpoint[2].
+    property to be the response[1] from the GDrive v3 file metadata endpoint[2].
 
-    [1] https://developers.google.com/drive/v2/reference/files
-    [2] https://developers.google.com/drive/v2/reference/files/get
+    [1] https://developers.google.com/drive/v3/reference/files
+    [2] https://developers.google.com/drive/v3/reference/files/get
     """
 
     @property
@@ -143,14 +143,14 @@ class GoogleDriveInstitutionsFileMetadata(BaseGoogleDriveInstitutionsMetadata, m
 
 class GoogleDriveInstitutionsFileRevisionMetadata(GoogleDriveInstitutionsFileMetadata):
     """The metadata for a single file at a particular revision on Google Drive.  This class expects
-    the ``raw`` property to be the response[1] from the GDrive v2 revision metadata endpoint[2].
+    the ``raw`` property to be the response[1] from the GDrive v3 revision metadata endpoint[2].
     This response is similar to the one from the file metadata endpoint, but lacks a created date
     and version field.  It also stores the file name of non-GDoc files in the ``originalFilename``
-    field instead of the ``title`` field.  GDocs do not include the file name at all, and must
+    field instead of the ``name`` field.  GDocs do not include the file name at all, and must
     derive it from the `GoogleDriveInstitutionsPath` object.
 
-    [1] https://developers.google.com/drive/v2/reference/revisions
-    [2] https://developers.google.com/drive/v2/reference/revisions/get
+    [1] https://developers.google.com/drive/v3/reference/revisions
+    [2] https://developers.google.com/drive/v3/reference/revisions/get
     """
 
     @property
