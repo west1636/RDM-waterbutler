@@ -35,15 +35,15 @@ class S3CompatFileMetadataHeaders(S3CompatMetadata, metadata.BaseFileMetadata):
 
     @property
     def size(self):
-        return self.raw['CONTENT-LENGTH']
+        return self.raw['ContentLength']
 
     @property
     def content_type(self):
-        return self.raw['CONTENT-TYPE']
+        return self.raw['ContentType']
 
     @property
     def modified(self):
-        return self.raw['LAST-MODIFIED']
+        return self.raw['LastModified']
 
     @property
     def created_utc(self):
@@ -51,13 +51,13 @@ class S3CompatFileMetadataHeaders(S3CompatMetadata, metadata.BaseFileMetadata):
 
     @property
     def etag(self):
-        return self.raw['ETAG'].replace('"', '')
+        return self.raw['ETag'].replace('"', '')
 
     @property
     def extra(self):
         return {
-            'md5': self.raw['ETAG'].replace('"', ''),
-            'encryption': self.raw.get('X-AMZ-SERVER-SIDE-ENCRYPTION', '')
+            'md5': self.raw['ETag'].replace('"', ''),
+            'encryption': self.raw.get('ServerSideEncryption', '')
         }
 
 

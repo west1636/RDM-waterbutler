@@ -10,6 +10,11 @@ import xmltodict
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat, NoHostProvided
 from boto.connection import HTTPRequest
 from boto.s3.bucket import Bucket
+from botocore.exceptions import ClientError
+
+import boto3
+import botocore
+# from boto3 import exception
 
 from waterbutler.core import streams
 from waterbutler.core import provider
@@ -26,7 +31,8 @@ from waterbutler.providers.s3compat.metadata import S3CompatFileMetadataHeaders
 logger = logging.getLogger(__name__)
 
 
-class S3CompatConnection(S3Connection):
+# class S3CompatConnection(S3Connection):
+class S3CompatConnection:
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
@@ -35,15 +41,23 @@ class S3CompatConnection(S3Connection):
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
                  validate_certs=None, profile_name=None):
-        super(S3CompatConnection, self).__init__(aws_access_key_id,
-                aws_secret_access_key,
-                is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
-                host=host,
-                debug=debug, https_connection_factory=https_connection_factory,
-                calling_format=calling_format,
-                path=path, provider=provider, bucket_class=bucket_class,
-                security_token=security_token, anon=anon,
-                validate_certs=validate_certs, profile_name=profile_name)
+        port = 443
+        m = re.match(r'^(.+)\:([0-9]+)$', host)
+        if m is not None:
+            host = m.group(1)
+            port = int(m.group(2))
+        if not s3_config.get('s3', 'use-sigv4'):
+            s3_config.add_section('s3')
+            s3_config.set('s3', 'use-sigv4', 'True')
+        region = host.split('.')[3]
+        url = ('https://' if port == 443 else 'http://') + host
+        self.s3 = boto3.resource(
+            's3',
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=region,
+            endpoint_url=url
+        )
 
     def add_auth(self, method, url, headers):
         urlo = parse.urlparse(url)
@@ -56,6 +70,8 @@ class S3CompatConnection(S3Connection):
     def _required_auth_capability(self):
         return ['s3']
 
+    def generate_presigned_url(self, ClientMethod, Params=None, ExpiresIn=3600, HttpMethod=None):
+        return self.s3.meta.client.generate_presigned_url(ClientMethod, Params=Params, ExpiresIn=ExpiresIn, HttpMethod=HttpMethod)
 
 class S3CompatProvider(provider.BaseProvider):
     """Provider for S3 Compatible Storage service.
@@ -99,7 +115,7 @@ class S3CompatProvider(provider.BaseProvider):
                                              host=host,
                                              port=port,
                                              is_secure=port == 443)
-        self.bucket = self.connection.get_bucket(settings['bucket'], validate=False)
+        self.bucket = self.connection.s3.Bucket(settings['bucket'])
         self.encrypt_uploads = self.settings.get('encrypt_uploads', False)
         self.prefix = settings.get('prefix', '')
 
@@ -114,8 +130,10 @@ class S3CompatProvider(provider.BaseProvider):
         if implicit_folder:
             params = {'prefix': prefix, 'delimiter': '/'}
             resp = await self.make_request(
-                'GET',
-                functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET'),
+                # 'GET',
+                # functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET'),
+                'HEAD',
+                functools.partial(self.generate_presigned_url, 'head_bucket', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={Bucket=self.bucket.bucket_name}),
                 params=params,
                 expects=(200, 404),
                 throws=exceptions.MetadataError,
@@ -123,7 +141,8 @@ class S3CompatProvider(provider.BaseProvider):
         else:
             resp = await self.make_request(
                 'HEAD',
-                functools.partial(self.bucket.new_key(prefix).generate_url, settings.TEMP_URL_SECS, 'HEAD'),
+                #functools.partial(self.bucket.new_key(prefix).generate_url, settings.TEMP_URL_SECS, 'HEAD'),
+                functools.partial(self.generate_presigned_url, 'head_object', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={Bucket=self.bucket.bucket_name, Key=prefix}),
                 expects=(200, 404),
                 throws=exceptions.MetadataError,
             )
@@ -142,10 +161,12 @@ class S3CompatProvider(provider.BaseProvider):
         return True
 
     def can_intra_copy(self, dest_provider, path=None):
-        return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
+        # return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
+        return False
 
     def can_intra_move(self, dest_provider, path=None):
-        return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
+        # return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
+        return False
 
     async def intra_copy(self, dest_provider, source_path, dest_path):
         """Copy key from one S3 Compatible Storage bucket to another. The credentials specified in
@@ -154,6 +175,7 @@ class S3CompatProvider(provider.BaseProvider):
         exists = await dest_provider.exists(dest_path)
 
         dest_key = dest_provider.bucket.new_key(dest_path.full_path)
+        ### dest_url = dest_provider.generate_presigned_url()
 
         # ensure no left slash when joining paths
         source_path = '/' + os.path.join(self.settings['bucket'], source_path.full_path)
@@ -186,25 +208,17 @@ class S3CompatProvider(provider.BaseProvider):
         if not path.is_file:
             raise exceptions.DownloadError('No file specified for download', code=400)
 
-        if not version or version.lower() == 'latest':
-            query_parameters = None
-        else:
-            query_parameters = {'versionId': version}
-
         if kwargs.get('displayName'):
             response_headers = {'response-content-disposition': 'attachment; filename*=UTF-8\'\'{}'.format(parse.quote(kwargs['displayName']))}
         else:
             response_headers = {'response-content-disposition': 'attachment'}
 
-        url = functools.partial(
-            self.bucket.new_key(path.full_path).generate_url,
-            settings.TEMP_URL_SECS,
-            query_parameters=query_parameters,
-            response_headers=response_headers
-        )
-
         headers = {}
-        raw_url = self.connection.add_auth('GET', url('GET'), headers)
+        query_parameters = {'Bucket': self.bucket.bucket_name, 'Key': path.full_path}
+        if version and version.lower() != 'latest':
+            query_parameters['VersionId'] =  version
+
+        raw_url = self.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='GET')
 
         resp = await self.make_request(
             'GET',
@@ -235,12 +249,9 @@ class S3CompatProvider(provider.BaseProvider):
         if self.encrypt_uploads:
             headers['x-amz-server-side-encryption'] = 'AES256'
 
-        upload_url = functools.partial(
-            self.bucket.new_key(path.full_path).generate_url,
-            settings.TEMP_URL_SECS,
-            'PUT',
-            headers=headers,
-        )
+        query_parameters = {'Bucket': self.bucket.bucket_name, 'Key': path.full_path}
+        upload_url = self.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='PUT')
+
         resp = await self.make_request(
             'PUT',
             upload_url,
@@ -271,9 +282,11 @@ class S3CompatProvider(provider.BaseProvider):
                 )
 
         if path.is_file:
+            query_parameters = {'Bucket': self.bucket.bucket_name, 'Key': path.full_path}
+            delete_url = self.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
             resp = await self.make_request(
                 'DELETE',
-                self.bucket.new_key(path.full_path).generate_url(settings.TEMP_URL_SECS, 'DELETE'),
+                delete_url,
                 expects=(200, 204, ),
                 throws=exceptions.DeleteError,
             )
@@ -282,29 +295,10 @@ class S3CompatProvider(provider.BaseProvider):
             await self._delete_folder(path, **kwargs)
 
     async def _folder_prefix_exists(self, folder_prefix):
-        # Even if the storage is MinIO, Contents with a leaf folder is
-        # returned when a last slash of a prefix is removed.
-        query_params = {
-            'prefix': folder_prefix.rstrip('/'),  # 'A/B/' -> 'A/B'
-            'delimiter': '/'}
-        resp = await self.make_request(
-            'GET',
-            self.bucket.generate_url(settings.TEMP_URL_SECS, 'GET'),
-            params=query_params,
-            expects=(200, ),
-            throws=exceptions.MetadataError,
-        )
-        contents = await resp.read()
-        parsed = xmltodict.parse(contents, strip_whitespace=False)['ListBucketResult']
-        common_prefixes = parsed.get('CommonPrefixes', [])
-        # common_prefixes is dict when returned prefix is one.
-        if not isinstance(common_prefixes, list):
-            common_prefixes = [common_prefixes]
-        for common_prefix in common_prefixes:
-            val = common_prefix.get('Prefix')
-            if val == folder_prefix:  # with last slash
-                return True
-        return False
+        objects = await self.bucket.objects.filter(Prefix=folder_prefix.rstrip('/')).limit(1)
+        object_count = len(list(objects))
+        exists = True if exist_count > 0 else False
+        return exists
 
     async def _delete_folder(self, path, **kwargs):
         """Query for recursive contents of folder and delete in batches of 1000
@@ -324,35 +318,9 @@ class S3CompatProvider(provider.BaseProvider):
         """
         if not path.full_path.endswith('/'):
             raise exceptions.InvalidParameters('not a folder: {}'.format(str(path)))
-        more_to_come = True
-        content_keys = []
-        prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B/' -> 'A/B/'
-        query_params = {'prefix': prefix}
-        marker = None
 
-        while more_to_come:
-            if marker is not None:
-                query_params['marker'] = marker
-
-            resp = await self.make_request(
-                'GET',
-                self.bucket.generate_url(settings.TEMP_URL_SECS, 'GET'),
-                params=query_params,
-                expects=(200, ),
-                throws=exceptions.MetadataError,
-            )
-
-            contents = await resp.read()
-            parsed = xmltodict.parse(contents, strip_whitespace=False)['ListBucketResult']
-            more_to_come = parsed.get('IsTruncated') == 'true'
-            contents = parsed.get('Contents', [])
-
-            if isinstance(contents, dict):
-                contents = [contents]
-
-            content_keys.extend([content['Key'] for content in contents])
-            if len(content_keys) > 0:
-                marker = content_keys[-1]
+        contents = await self.bucket.objects.filter(Prefix=folder_prefix.rstrip('/'))
+        content_keys = [object.key for content in contents]
 
         # Query against non-existant folder does not return 404
         if len(content_keys) == 0:
@@ -363,9 +331,11 @@ class S3CompatProvider(provider.BaseProvider):
                 raise exceptions.NotFoundError(str(path))
 
         for content_key in content_keys[::-1]:
+            query_parameters = {'Bucket': self.bucket.bucket_name, 'Key': content_key}
+            delete_url = self.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
             resp = await self.make_request(
                 'DELETE',
-                self.bucket.new_key(content_key).generate_url(settings.TEMP_URL_SECS, 'DELETE'),
+                delete_url,
                 expects=(200, 204, ),
                 throws=exceptions.DeleteError,
             )
@@ -378,28 +348,14 @@ class S3CompatProvider(provider.BaseProvider):
         :rtype list:
         """
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
-        # "versions" in "query_parameters" is required for generate_url().
-        # SignatureDoesNotMatch is returned when "versions" is not specified.
-        query_params = {'prefix': prefix, 'delimiter': '/', 'versions': ''}
-        url = functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET', query_parameters=query_params)
         try:
-            resp = await self.make_request(
-                'GET',
-                url,
-                params=query_params,
-                expects=(200,),
-                throws=exceptions.MetadataError,
-            )
-        except exceptions.MetadataError as e:
+            resp = await self.s3.meta.client.list_object_versions(Bucket=self.bucket.bucket_name, Prefix=prefix)
+        except ClientError as e:
             # MinIO may not support "versions" from generate_url() of boto2.
             # (And, MinIO does not support ListObjectVersions yet.)
-            logger.info('ListObjectVersions may not be supported: url={}: {}'.format(url(), str(e)))
+            logger.info('ListObjectVersions may not be supported: {}'.format(str(e)))
             return []
-
-        content = await resp.read()
-        xml = xmltodict.parse(content)
-        versions = xml['ListVersionsResult'].get('Version') or []
-
+        versions = resp['Versions']
         if isinstance(versions, dict):
             versions = [versions]
 
@@ -430,61 +386,32 @@ class S3CompatProvider(provider.BaseProvider):
             if (await self.exists(path)):
                 raise exceptions.FolderNamingConflict(path.name)
 
-        async with self.request(
-            'PUT',
-            functools.partial(self.bucket.new_key(path.full_path).generate_url, settings.TEMP_URL_SECS, 'PUT'),
-            skip_auto_headers={'CONTENT-TYPE'},
-            expects=(200, 201),
-            throws=exceptions.CreateFolderError
-        ):
+        # async with self.request(
+        #     'PUT',
+        #     functools.partial(self.bucket.new_key(path.full_path).generate_url, settings.TEMP_URL_SECS, 'PUT'),
+        #     skip_auto_headers={'CONTENT-TYPE'},
+        #     expects=(200, 201),
+        #     throws=exceptions.CreateFolderError
+        # ):
+        #     return S3CompatFolderMetadata(self, {'Prefix': path.full_path})
+        
+        async with self.bucket.put_object(Key=path.full_path, Body=''):
             return S3CompatFolderMetadata(self, {'Prefix': path.full_path})
 
     async def _metadata_file(self, path, revision=None):
         if revision == 'Latest':
             revision = None
-        resp = await self.make_request(
-            'HEAD',
-            functools.partial(
-                self.bucket.new_key(path.full_path).generate_url,
-                settings.TEMP_URL_SECS,
-                'HEAD',
-                query_parameters={'versionId': revision} if revision else None
-            ),
-            expects=(200, ),
-            throws=exceptions.MetadataError,
-        )
-        await resp.release()
-        return S3CompatFileMetadataHeaders(self, path.full_path, resp.headers)
+        resp = await self.s3.meta.client.head_object(
+                Bucket=self.bucket.bucket_name, Key=path.full_path, VersionId=revision
+            )
+        return S3CompatFileMetadataHeaders(self, path.full_path, resp)
 
     async def _metadata_folder(self, path):
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
-        params = {'prefix': prefix, 'delimiter': '/'}
-        resp = await self.make_request(
-            'GET',
-            functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET'),
-            params=params,
-            expects=(200, ),
-            throws=exceptions.MetadataError,
-        )
 
-        contents = await resp.read()
-
-        parsed = xmltodict.parse(contents, strip_whitespace=False)['ListBucketResult']
-
-        contents = parsed.get('Contents', [])
-        prefixes = parsed.get('CommonPrefixes', [])
-
-        if not contents and not prefixes and not path.is_root:
-            # If contents and prefixes are empty then this "folder"
-            # must exist as a key with a / at the end of the name
-            # if the path is root there is no need to test if it exists
-            resp = await self.make_request(
-                'HEAD',
-                functools.partial(self.bucket.new_key(prefix).generate_url, settings.TEMP_URL_SECS, 'HEAD'),
-                expects=(200, ),
-                throws=exceptions.MetadataError,
-            )
-            await resp.release()
+        resp = await self.s3.meta.client.list_objects(Bucket=self.bucket.bucket_name, Prefix=prefix)
+        contents = resp.get('Contents', [])
+        prefixes = resp.get('CommonPrefixes', [])
 
         if isinstance(contents, dict):
             contents = [contents]
