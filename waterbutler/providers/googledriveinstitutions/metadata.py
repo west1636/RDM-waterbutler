@@ -108,6 +108,7 @@ class GoogleDriveInstitutionsFileMetadata(BaseGoogleDriveInstitutionsMetadata, m
 
     @property
     def etag(self):
+        # return self.raw.get('version')
         return self.raw['version']
 
     @property

@@ -146,7 +146,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         async with self.request(
             'PATCH',
             self.build_url('files', src_path.identifier),
-            params={'addParents': dest_path.parent.identifier, 'removeParents': src_path.parent.identifier},
+            params={'addParents': dest_path.parent.identifier, 'removeParents': src_path.parent.identifier, 'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit)'},
             headers={
                 'Content-Type': 'application/json'
             },
@@ -182,9 +182,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             params={'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit)'},
             headers={'Content-Type': 'application/json'},
             data=json.dumps({
-                'parents': [{
-                    'id': dest_path.parent.identifier
-                }],
+                'parents': [dest_path.parent.identifier],
                 'name': dest_path.name
             }),
             expects=(200, ),
