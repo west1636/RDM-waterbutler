@@ -46,9 +46,9 @@ class S3CompatConnection:
         if m is not None:
             host = m.group(1)
             port = int(m.group(2))
-        if not s3_config.get('s3', 'use-sigv4'):
-            s3_config.add_section('s3')
-            s3_config.set('s3', 'use-sigv4', 'True')
+        # if not s3_config.get('s3', 'use-sigv4'):
+        #     s3_config.add_section('s3')
+        #     s3_config.set('s3', 'use-sigv4', 'True')
         region = host.split('.')[3]
         url = ('https://' if port == 443 else 'http://') + host
         self.s3 = boto3.resource(
