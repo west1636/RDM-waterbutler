@@ -133,7 +133,7 @@ class S3CompatProvider(provider.BaseProvider):
                 # 'GET',
                 # functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET'),
                 'HEAD',
-                functools.partial(self.generate_presigned_url, 'head_bucket', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={Bucket=self.bucket.bucket_name}),
+                functools.partial(self.generate_presigned_url, 'head_bucket', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.bucket_name}),
                 params=params,
                 expects=(200, 404),
                 throws=exceptions.MetadataError,
@@ -142,7 +142,7 @@ class S3CompatProvider(provider.BaseProvider):
             resp = await self.make_request(
                 'HEAD',
                 #functools.partial(self.bucket.new_key(prefix).generate_url, settings.TEMP_URL_SECS, 'HEAD'),
-                functools.partial(self.generate_presigned_url, 'head_object', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={Bucket=self.bucket.bucket_name, Key=prefix}),
+                functools.partial(self.generate_presigned_url, 'head_object', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.bucket_name, 'Key': prefix}),
                 expects=(200, 404),
                 throws=exceptions.MetadataError,
             )
