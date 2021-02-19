@@ -133,7 +133,7 @@ class S3CompatProvider(provider.BaseProvider):
                 # 'GET',
                 # functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET'),
                 'HEAD',
-                functools.partial(self.generate_presigned_url, 'head_bucket', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.name}),
+                functools.partial(self.connection.generate_presigned_url, 'head_bucket', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.name}),
                 params=params,
                 expects=(200, 404),
                 throws=exceptions.MetadataError,
@@ -142,7 +142,7 @@ class S3CompatProvider(provider.BaseProvider):
             resp = await self.make_request(
                 'HEAD',
                 #functools.partial(self.bucket.new_key(prefix).generate_url, settings.TEMP_URL_SECS, 'HEAD'),
-                functools.partial(self.generate_presigned_url, 'head_object', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.name, 'Key': prefix}),
+                functools.partial(self.connection.generate_presigned_url, 'head_object', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.name, 'Key': prefix}),
                 expects=(200, 404),
                 throws=exceptions.MetadataError,
             )
@@ -218,7 +218,7 @@ class S3CompatProvider(provider.BaseProvider):
         if version and version.lower() != 'latest':
             query_parameters['VersionId'] =  version
 
-        raw_url = self.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='GET')
+        raw_url = self.connection.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='GET')
 
         resp = await self.make_request(
             'GET',
@@ -260,7 +260,7 @@ class S3CompatProvider(provider.BaseProvider):
             headers['x-amz-server-side-encryption'] = 'AES256'
          
         query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
-        upload_url = self.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='PUT')
+        upload_url = self.connection.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='PUT')
         
         resp = await self.make_request(
             'PUT',
@@ -293,7 +293,7 @@ class S3CompatProvider(provider.BaseProvider):
 
         if path.is_file:
             query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
-            delete_url = self.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
+            delete_url = self.connection.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
             resp = await self.make_request(
                 'DELETE',
                 delete_url,
@@ -342,7 +342,7 @@ class S3CompatProvider(provider.BaseProvider):
 
         for content_key in content_keys[::-1]:
             query_parameters = {'Bucket': self.bucket.name, 'Key': content_key}
-            delete_url = self.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
+            delete_url = self.connection.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
             resp = await self.make_request(
                 'DELETE',
                 delete_url,
