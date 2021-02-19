@@ -412,9 +412,13 @@ class S3CompatProvider(provider.BaseProvider):
         if revision is None or revision == 'Latest':
             revision = 'null'
         logger.info('_metadata_file: {}: {}: {}'.format(self.bucket.name, path.full_path, revision))
-        resp = self.connection.s3.meta.client.head_object(
+        try:
+            resp = self.connection.s3.meta.client.head_object(
                 Bucket=self.bucket.name, Key=path.full_path, VersionId=revision
             )
+        except ClientError as e:
+            raise exceptions.NotFoundError(str(path.full_path))
+
         return S3CompatFileMetadataHeaders(self, path.full_path, resp)
 
     async def _metadata_folder(self, path):
