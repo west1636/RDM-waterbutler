@@ -349,7 +349,7 @@ class S3CompatProvider(provider.BaseProvider):
         """
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
         try:
-            resp = await self.connection.s3.meta.client.list_object_versions(Bucket=self.bucket.name, Prefix=prefix)
+            resp = self.connection.s3.meta.client.list_object_versions(Bucket=self.bucket.name, Prefix=prefix)
         except ClientError as e:
             # MinIO may not support "versions" from generate_url() of boto2.
             # (And, MinIO does not support ListObjectVersions yet.)
@@ -401,7 +401,7 @@ class S3CompatProvider(provider.BaseProvider):
     async def _metadata_file(self, path, revision=None):
         if revision == 'Latest':
             revision = None
-        resp = await self.connection.s3.meta.client.head_object(
+        resp = self.connection.s3.meta.client.head_object(
                 Bucket=self.bucket.name, Key=path.full_path, VersionId=revision
             )
         return S3CompatFileMetadataHeaders(self, path.full_path, resp)
@@ -409,7 +409,7 @@ class S3CompatProvider(provider.BaseProvider):
     async def _metadata_folder(self, path):
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
 
-        resp = await self.connection.s3.meta.client.list_objects(Bucket=self.bucket.name, Prefix=prefix)
+        resp = self.connection.s3.meta.client.list_objects(Bucket=self.bucket.name, Prefix=prefix)
         contents = resp.get('Contents', [])
         prefixes = resp.get('CommonPrefixes', [])
 
