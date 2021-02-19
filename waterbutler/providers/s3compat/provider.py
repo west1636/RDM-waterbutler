@@ -242,28 +242,36 @@ class S3CompatProvider(provider.BaseProvider):
         path, exists = await self.handle_name_conflict(path, conflict=conflict)
         stream.add_writer('md5', streams.HashStreamWriter(hashlib.md5))
 
-        headers = {'Content-Length': str(stream.size)}
-
-        # this is usually set in boto.s3.key.generate_url, but do it here
-        # do be explicit about our header payloads for signing purposes
-        if self.encrypt_uploads:
-            headers['x-amz-server-side-encryption'] = 'AES256'
-
-        query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
-        upload_url = self.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='PUT')
-
-        resp = await self.make_request(
-            'PUT',
-            upload_url,
-            data=stream,
-            skip_auto_headers={'CONTENT-TYPE'},
-            headers=headers,
-            expects=(200, 201, ),
-            throws=exceptions.UploadError,
+        resp = await self.bucket.put_object(
+            Key=path.full_path,
+            Body=stream,
+            ServerSideEncryption='AES256',
+            ContentLength=str(stream.size)
         )
+        assert resp.e_tag.replace('"', '') == stream.writers['md5'].hexdigest
+
+        # headers = {'Content-Length': str(stream.size)}
+        #
+        # # this is usually set in boto.s3.key.generate_url, but do it here
+        # # do be explicit about our header payloads for signing purposes
+        # if self.encrypt_uploads:
+        #     headers['x-amz-server-side-encryption'] = 'AES256'
+        # 
+        # query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
+        # upload_url = self.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='PUT')
+        #
+        # resp = await self.make_request(
+        #    'PUT',
+        #    upload_url,
+        #    data=stream,
+        #    skip_auto_headers={'CONTENT-TYPE'},
+        #    headers=headers,
+        #    expects=(200, 201, ),
+        #    throws=exceptions.UploadError,
+        #)
         # md5 is returned as ETag header as long as server side encryption is not used.
         # TODO: nice assertion error goes here
-        assert resp.headers['ETag'].replace('"', '') == stream.writers['md5'].hexdigest
+        # assert resp.headers['ETag'].replace('"', '') == stream.writers['md5'].hexdigest
 
         await resp.release()
         return (await self.metadata(path, **kwargs)), not exists
