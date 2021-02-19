@@ -430,9 +430,14 @@ class S3CompatProvider(provider.BaseProvider):
         if isinstance(contents, dict):
             contents = [contents]
 
-        items =[]
+        items = [
+            S3CompatFolderMetadata(self, {Prefix: prefix})
+        ]
 
         for content in contents:
+            if content['Key'] == path.full_path:  # self
+                continue
+
             if content['Key'].endswith('/'):
                 items.append(S3CompatFolderKeyMetadata(self, content))
             else:
