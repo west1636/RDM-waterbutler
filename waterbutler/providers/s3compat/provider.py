@@ -409,7 +409,7 @@ class S3CompatProvider(provider.BaseProvider):
     async def _metadata_folder(self, path):
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
 
-        resp = await self.connection.connection.s3.meta.client.list_objects(Bucket=self.bucket.bucket_name, Prefix=prefix)
+        resp = await self.connection.s3.meta.client.list_objects(Bucket=self.bucket.bucket_name, Prefix=prefix)
         contents = resp.get('Contents', [])
         prefixes = resp.get('CommonPrefixes', [])
 
