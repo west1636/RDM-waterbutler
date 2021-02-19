@@ -329,7 +329,7 @@ class S3CompatProvider(provider.BaseProvider):
         if not path.full_path.endswith('/'):
             raise exceptions.InvalidParameters('not a folder: {}'.format(str(path)))
 
-        contents = await self.bucket.objects.filter(Prefix=folder_prefix.rstrip('/'))
+        contents = await self.bucket.objects.filter(Prefix=path.full_path.lstrip('/'))
         content_keys = [object.key for content in contents]
 
         # Query against non-existant folder does not return 404
@@ -426,23 +426,12 @@ class S3CompatProvider(provider.BaseProvider):
 
         resp = self.connection.s3.meta.client.list_objects(Bucket=self.bucket.name, Prefix=prefix)
         contents = resp.get('Contents', [])
-        prefixes = resp.get('CommonPrefixes', [])
 
         if isinstance(contents, dict):
             contents = [contents]
 
-        if isinstance(prefixes, dict):
-            prefixes = [prefixes]
-
-        items = [
-            S3CompatFolderMetadata(self, item)
-            for item in prefixes
-        ]
 
         for content in contents:
-            if content['Key'] == path.full_path:  # self
-                continue
-
             if content['Key'].endswith('/'):
                 items.append(S3CompatFolderKeyMetadata(self, content))
             else:
