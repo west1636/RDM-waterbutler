@@ -43,7 +43,7 @@ class S3CompatFileMetadataHeaders(S3CompatMetadata, metadata.BaseFileMetadata):
 
     @property
     def modified(self):
-        return self.raw['LastModified']
+        return str(self.raw['LastModified'])
 
     @property
     def created_utc(self):
@@ -78,7 +78,7 @@ class S3CompatFileMetadata(S3CompatMetadata, metadata.BaseFileMetadata):
 
     @property
     def modified(self):
-        return self.raw['LastModified']
+        return str(self.raw['LastModified'])
 
     @property
     def created_utc(self):
@@ -146,7 +146,7 @@ class S3CompatRevision(metadata.BaseFileRevisionMetadata):
 
     @property
     def modified(self):
-        return self.raw['LastModified']
+        return str(self.raw['LastModified'])
 
     @property
     def extra(self):
