@@ -430,6 +430,7 @@ class S3CompatProvider(provider.BaseProvider):
         if isinstance(contents, dict):
             contents = [contents]
 
+        items =[]
 
         for content in contents:
             if content['Key'].endswith('/'):
