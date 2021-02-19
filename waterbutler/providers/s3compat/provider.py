@@ -133,7 +133,7 @@ class S3CompatProvider(provider.BaseProvider):
                 # 'GET',
                 # functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET'),
                 'HEAD',
-                functools.partial(self.generate_presigned_url, 'head_bucket', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.bucket_name}),
+                functools.partial(self.generate_presigned_url, 'head_bucket', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.name}),
                 params=params,
                 expects=(200, 404),
                 throws=exceptions.MetadataError,
@@ -142,7 +142,7 @@ class S3CompatProvider(provider.BaseProvider):
             resp = await self.make_request(
                 'HEAD',
                 #functools.partial(self.bucket.new_key(prefix).generate_url, settings.TEMP_URL_SECS, 'HEAD'),
-                functools.partial(self.generate_presigned_url, 'head_object', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.bucket_name, 'Key': prefix}),
+                functools.partial(self.generate_presigned_url, 'head_object', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', params={'Bucket': self.bucket.name, 'Key': prefix}),
                 expects=(200, 404),
                 throws=exceptions.MetadataError,
             )
@@ -214,7 +214,7 @@ class S3CompatProvider(provider.BaseProvider):
             response_headers = {'response-content-disposition': 'attachment'}
 
         headers = {}
-        query_parameters = {'Bucket': self.bucket.bucket_name, 'Key': path.full_path}
+        query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
         if version and version.lower() != 'latest':
             query_parameters['VersionId'] =  version
 
@@ -249,7 +249,7 @@ class S3CompatProvider(provider.BaseProvider):
         if self.encrypt_uploads:
             headers['x-amz-server-side-encryption'] = 'AES256'
 
-        query_parameters = {'Bucket': self.bucket.bucket_name, 'Key': path.full_path}
+        query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
         upload_url = self.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='PUT')
 
         resp = await self.make_request(
@@ -282,7 +282,7 @@ class S3CompatProvider(provider.BaseProvider):
                 )
 
         if path.is_file:
-            query_parameters = {'Bucket': self.bucket.bucket_name, 'Key': path.full_path}
+            query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
             delete_url = self.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
             resp = await self.make_request(
                 'DELETE',
@@ -331,7 +331,7 @@ class S3CompatProvider(provider.BaseProvider):
                 raise exceptions.NotFoundError(str(path))
 
         for content_key in content_keys[::-1]:
-            query_parameters = {'Bucket': self.bucket.bucket_name, 'Key': content_key}
+            query_parameters = {'Bucket': self.bucket.name, 'Key': content_key}
             delete_url = self.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
             resp = await self.make_request(
                 'DELETE',
@@ -349,7 +349,7 @@ class S3CompatProvider(provider.BaseProvider):
         """
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
         try:
-            resp = await self.connection.s3.meta.client.list_object_versions(Bucket=self.bucket.bucket_name, Prefix=prefix)
+            resp = await self.connection.s3.meta.client.list_object_versions(Bucket=self.bucket.name, Prefix=prefix)
         except ClientError as e:
             # MinIO may not support "versions" from generate_url() of boto2.
             # (And, MinIO does not support ListObjectVersions yet.)
@@ -402,14 +402,14 @@ class S3CompatProvider(provider.BaseProvider):
         if revision == 'Latest':
             revision = None
         resp = await self.connection.s3.meta.client.head_object(
-                Bucket=self.bucket.bucket_name, Key=path.full_path, VersionId=revision
+                Bucket=self.bucket.name, Key=path.full_path, VersionId=revision
             )
         return S3CompatFileMetadataHeaders(self, path.full_path, resp)
 
     async def _metadata_folder(self, path):
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
 
-        resp = await self.connection.s3.meta.client.list_objects(Bucket=self.bucket.bucket_name, Prefix=prefix)
+        resp = await self.connection.s3.meta.client.list_objects(Bucket=self.bucket.name, Prefix=prefix)
         contents = resp.get('Contents', [])
         prefixes = resp.get('CommonPrefixes', [])
 
