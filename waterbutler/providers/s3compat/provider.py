@@ -242,12 +242,14 @@ class S3CompatProvider(provider.BaseProvider):
         path, exists = await self.handle_name_conflict(path, conflict=conflict)
         stream.add_writer('md5', streams.HashStreamWriter(hashlib.md5))
 
+        logger.info('upload: {}: start'.format(path.full_path))
         resp = await self.bucket.put_object(
             Key=path.full_path,
             Body=stream,
             ServerSideEncryption='AES256',
             ContentLength=str(stream.size)
         )
+        logger.info('upload: {}: {}'.format(path.full_path, str(resp)))
         assert resp.e_tag.replace('"', '') == stream.writers['md5'].hexdigest
 
         # headers = {'Content-Length': str(stream.size)}
