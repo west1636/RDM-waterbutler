@@ -247,7 +247,7 @@ class S3CompatProvider(provider.BaseProvider):
             Key=path.full_path,
             Body=stream,
             ServerSideEncryption='AES256',
-            ContentLength=str(stream.size)
+            ContentLength=stream.size
         )
         logger.info('upload: {}: {}'.format(path.full_path, str(resp)))
         assert resp.e_tag.replace('"', '') == stream.writers['md5'].hexdigest
