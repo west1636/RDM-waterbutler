@@ -398,7 +398,7 @@ class S3CompatProvider(provider.BaseProvider):
         async with self.bucket.put_object(Key=path.full_path, Body=''):
             return S3CompatFolderMetadata(self, {'Prefix': path.full_path})
 
-    async def _metadata_file(self, path, revision=None):
+    async def _metadata_file(self, path, revision='null'):
         if revision == 'Latest':
             revision = 'null'
         resp = self.connection.s3.meta.client.head_object(
