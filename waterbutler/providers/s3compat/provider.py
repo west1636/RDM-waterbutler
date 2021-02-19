@@ -400,7 +400,7 @@ class S3CompatProvider(provider.BaseProvider):
 
     async def _metadata_file(self, path, revision=None):
         if revision == 'Latest':
-            revision = None
+            revision = 'null'
         resp = self.connection.s3.meta.client.head_object(
                 Bucket=self.bucket.name, Key=path.full_path, VersionId=revision
             )
