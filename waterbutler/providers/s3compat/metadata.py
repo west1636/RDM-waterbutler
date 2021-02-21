@@ -124,7 +124,7 @@ class S3CompatFolderMetadata(S3CompatMetadata, metadata.BaseFolderMetadata):
 
     @property
     def name(self):
-        return self.raw['Prefix'].split('/')[-2]
+        return self.raw['Prefix'].split('/')[0]
 
     @property
     def path(self):
