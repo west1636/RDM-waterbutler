@@ -146,39 +146,20 @@ class S3CompatProvider(provider.BaseProvider):
         return True
 
     def can_intra_copy(self, dest_provider, path=None):
-        # return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
-        return False
+        return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
 
     def can_intra_move(self, dest_provider, path=None):
-        # return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
-        return False
+        return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
 
     async def intra_copy(self, dest_provider, source_path, dest_path):
         """Copy key from one S3 Compatible Storage bucket to another. The credentials specified in
         `dest_provider` must have read access to `source.bucket`.
         """
         exists = await dest_provider.exists(dest_path)
+        copy_source={'Bucket': self.bucket.name, 'Key': source_path.full_path}
 
-        dest_key = dest_provider.bucket.new_key(dest_path.full_path)
-        ### dest_url = dest_provider.generate_presigned_url()
+        resp = await dest_provider.bucket.Object(dest_path.full_path).copy_from(CopySource=copy_source)
 
-        # ensure no left slash when joining paths
-        source_path = '/' + os.path.join(self.settings['bucket'], source_path.full_path)
-        headers = {'x-amz-copy-source': parse.quote(source_path)}
-        url = functools.partial(
-            dest_key.generate_url,
-            settings.TEMP_URL_SECS,
-            'PUT',
-            headers=headers,
-        )
-        resp = await self.make_request(
-            'PUT', url,
-            skip_auto_headers={'CONTENT-TYPE'},
-            headers=headers,
-            expects=(200, ),
-            throws=exceptions.IntraCopyError,
-        )
-        await resp.release()
         return (await dest_provider.metadata(dest_path)), not exists
 
     async def download(self, path, accept_url=False, version=None, range=None, **kwargs):
