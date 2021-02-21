@@ -435,7 +435,7 @@ class S3CompatProvider(provider.BaseProvider):
         # S3CompatFolderMetadata(self, {'Prefix': path.full_path})
 
         for content in contents:
-            logger.info('_metadata_folder: content: {}: {}'.format(content['key'], prefix))
+            logger.info('_metadata_folder: content: {}: {}'.format(content['Key'], prefix))
             if content['Key'].lstrip('/') == prefix:  # self
                 items.append(S3CompatFolderMetadata(self, {'Prefix': path.full_path}))
             elif content['Key'].endswith('/'):
