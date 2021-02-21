@@ -426,21 +426,17 @@ class S3CompatProvider(provider.BaseProvider):
 
         resp = self.connection.s3.meta.client.list_objects(Bucket=self.bucket.name, Prefix=prefix)
         contents = resp.get('Contents', [])
-        if len(contents) == 0:
-            raise exceptions.MetadataError
 
         if isinstance(contents, dict):
             contents = [contents]
 
-        items = [
-            S3CompatFolderMetadata(self, {'Prefix': path.full_path})
-        ]
+        items = []
+        # S3CompatFolderMetadata(self, {'Prefix': path.full_path})
 
         for content in contents:
-            if content['Key'] == path.full_path:  # self
-                continue
-
-            if content['Key'].endswith('/'):
+            if content['Key'].lstrip('/') == prefix:  # self
+                items.append(S3CompatFolderMetadata(self, {'Prefix': path.full_path}))
+            elif content['Key'].endswith('/'):
                 items.append(S3CompatFolderKeyMetadata(self, content))
             else:
                 items.append(S3CompatFileMetadata(self, content))
