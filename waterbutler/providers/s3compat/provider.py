@@ -431,7 +431,7 @@ class S3CompatProvider(provider.BaseProvider):
             contents = [contents]
 
         items = [
-            S3CompatFolderMetadata(self, {'Prefix': prefix})
+            S3CompatFolderMetadata(self, {'Prefix': path.full_path})
         ]
 
         for content in contents:
