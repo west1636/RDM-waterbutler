@@ -416,9 +416,9 @@ class S3CompatProvider(provider.BaseProvider):
         if len(list(contents)) == 0:
             raise exceptions.NotFoundError(str(path.full_path))
 
-        items = [
-            S3CompatFolderMetadata(self, {'Prefix': path.full_path})
-        ]
+        items = []
+        # S3CompatFolderMetadata(self, {'Prefix': path.full_path})
+        
 
         for content in contents:
             logger.info('_metadata_folder: content: {}: {}'.format(content['Key'], prefix))
