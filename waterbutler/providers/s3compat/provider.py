@@ -307,8 +307,8 @@ class S3CompatProvider(provider.BaseProvider):
     async def _folder_prefix_exists(self, folder_prefix):
         objects = await self.bucket.objects.filter(Prefix=folder_prefix.rstrip('/')).limit(1)
         object_count = len(list(objects))
-        exists = True if exist_count > 0 else False
-        return exists
+        is_exists = True if exist_count > 0 else False
+        return is_exists
 
     async def _delete_folder(self, path, **kwargs):
         """Query for recursive contents of folder and delete in batches of 1000
@@ -426,6 +426,8 @@ class S3CompatProvider(provider.BaseProvider):
 
         resp = self.connection.s3.meta.client.list_objects(Bucket=self.bucket.name, Prefix=prefix)
         contents = resp.get('Contents', [])
+        if len(contents) == 0:
+            raise exceptions.MetadataError
 
         if isinstance(contents, dict):
             contents = [contents]
