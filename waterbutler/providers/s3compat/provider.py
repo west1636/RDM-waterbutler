@@ -127,7 +127,7 @@ class S3CompatProvider(provider.BaseProvider):
         implicit_folder = path.endswith('/')
 
         if implicit_folder:
-            objects = await self.bucket.objects.filter(Prefix=wbpath.full_path)
+            objects = self.bucket.objects.filter(Prefix=wbpath.full_path)
             if len(list(objects)) == 0:
                 raise exceptions.NotFoundError(str(prefix))
 
@@ -290,7 +290,7 @@ class S3CompatProvider(provider.BaseProvider):
             await self._delete_folder(path, **kwargs)
 
     async def _folder_prefix_exists(self, folder_prefix):
-        objects = await self.bucket.objects.filter(Prefix=folder_prefix.rstrip('/')).limit(1)
+        objects = self.bucket.objects.filter(Prefix=folder_prefix.rstrip('/')).limit(1)
         object_count = len(list(objects))
         is_exists = True if exist_count > 0 else False
         return is_exists
@@ -314,7 +314,7 @@ class S3CompatProvider(provider.BaseProvider):
         if not path.full_path.endswith('/'):
             raise exceptions.InvalidParameters('not a folder: {}'.format(str(path)))
 
-        contents = await self.bucket.objects.filter(Prefix=path.full_path.lstrip('/'))
+        contents = self.bucket.objects.filter(Prefix=path.full_path.lstrip('/'))
         content_keys = [object.key for content in contents]
 
         # Query against non-existant folder does not return 404
