@@ -422,6 +422,7 @@ class S3CompatProvider(provider.BaseProvider):
         return S3CompatFileMetadataHeaders(self, path.full_path, resp)
 
     async def _metadata_folder(self, path):
+        logger.info('_metadata_folder: {}:'.format(path.full_path))
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
 
         resp = self.connection.s3.meta.client.list_objects(Bucket=self.bucket.name, Prefix=prefix)
@@ -434,6 +435,7 @@ class S3CompatProvider(provider.BaseProvider):
         # S3CompatFolderMetadata(self, {'Prefix': path.full_path})
 
         for content in contents:
+            logger.info('_metadata_folder: content: {}: {}'.format(content['key'], prefix))
             if content['Key'].lstrip('/') == prefix:  # self
                 items.append(S3CompatFolderMetadata(self, {'Prefix': path.full_path}))
             elif content['Key'].endswith('/'):
