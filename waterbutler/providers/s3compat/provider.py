@@ -381,17 +381,8 @@ class S3CompatProvider(provider.BaseProvider):
             if (await self.exists(path)):
                 raise exceptions.FolderNamingConflict(path.name)
 
-        # async with self.request(
-        #     'PUT',
-        #     functools.partial(self.bucket.new_key(path.full_path).generate_url, settings.TEMP_URL_SECS, 'PUT'),
-        #     skip_auto_headers={'CONTENT-TYPE'},
-        #     expects=(200, 201),
-        #     throws=exceptions.CreateFolderError
-        # ):
-        #     return S3CompatFolderMetadata(self, {'Prefix': path.full_path})
-        
-        async with self.bucket.put_object(Key=path.full_path, Body=''):
-            return S3CompatFolderMetadata(self, {'Prefix': path.full_path})
+        self.bucket.put_object(Key=path.full_path, Body=''):
+        return S3CompatFolderMetadata(self, {'Prefix': path.full_path})
 
     async def _metadata_file(self, path, revision=None):
         if revision is None or revision == 'Latest':
@@ -401,7 +392,7 @@ class S3CompatProvider(provider.BaseProvider):
             resp = self.connection.s3.meta.client.head_object(
                 Bucket=self.bucket.name, Key=path.full_path, VersionId=revision
             )
-        except ClientError as e:
+        except ClientError:
             raise exceptions.NotFoundError(str(path.full_path))
 
         return S3CompatFileMetadataHeaders(self, path.full_path, resp)
