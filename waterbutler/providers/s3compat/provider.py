@@ -269,7 +269,7 @@ class S3CompatProvider(provider.BaseProvider):
     async def _folder_prefix_exists(self, folder_prefix):
         objects = self.bucket.objects.filter(Prefix=folder_prefix.rstrip('/')).limit(1)
         object_count = len(list(objects))
-        is_exists = True if exist_count > 0 else False
+        is_exists = True if object_count > 0 else False
         return is_exists
 
     async def _delete_folder(self, path, **kwargs):
