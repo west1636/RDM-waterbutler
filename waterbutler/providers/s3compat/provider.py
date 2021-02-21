@@ -389,7 +389,7 @@ class S3CompatProvider(provider.BaseProvider):
 
         resp = self.connection.s3.meta.client.list_objects_v2(Bucket=self.bucket.name, Prefix=prefix, Delimiter='/')
         contents = resp.get('Contents', [])
-        prefixes = parsed.get('CommonPrefixes', [])
+        prefixes = resp.get('CommonPrefixes', [])
 
         if len(list(contents)) == 0:
             raise exceptions.NotFoundError(str(path.full_path))
