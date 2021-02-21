@@ -315,7 +315,7 @@ class S3CompatProvider(provider.BaseProvider):
             raise exceptions.InvalidParameters('not a folder: {}'.format(str(path)))
 
         contents = self.bucket.objects.filter(Prefix=path.full_path)
-        content_keys = [object.key for content in contents]
+        content_keys = [content.key for content in contents]
 
         # Query against non-existant folder does not return 404
         if len(content_keys) == 0:
