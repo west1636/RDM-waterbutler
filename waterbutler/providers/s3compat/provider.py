@@ -158,7 +158,7 @@ class S3CompatProvider(provider.BaseProvider):
         exists = await dest_provider.exists(dest_path)
         copy_source={'Bucket': self.bucket.name, 'Key': source_path.full_path}
 
-        resp = await dest_provider.bucket.Object(dest_path.full_path).copy_from(CopySource=copy_source)
+        resp = dest_provider.bucket.Object(dest_path.full_path).copy_from(CopySource=copy_source)
 
         return (await dest_provider.metadata(dest_path)), not exists
 
