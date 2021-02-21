@@ -414,7 +414,7 @@ class S3CompatProvider(provider.BaseProvider):
         contents = resp.get('Contents', [])
 
         if len(list(contents)) == 0:
-            raise exceptions.MetadataError(str(prefix))
+            raise exceptions.NotFoundError(str(prefix))
 
         items = [
             S3CompatFolderMetadata(self, {'Prefix': path.full_path})
