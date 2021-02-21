@@ -128,29 +128,15 @@ class S3CompatProvider(provider.BaseProvider):
 
         prefix = wbpath.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
         if implicit_folder:
-            params = {'prefix': prefix, 'delimiter': '/'}
-            resp = await self.make_request(
-                # 'GET',
-                # functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET'),
-                'HEAD',
-                functools.partial(self.connection.generate_presigned_url, 'head_bucket', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', Params={'Bucket': self.bucket.name}),
-                params=params,
-                expects=(200, 404),
-                throws=exceptions.MetadataError,
-            )
+            objects = await self.bucket.filter(Prefix=wbpath.full_path)
+            if len(list(objects)) == 0
+                raise exceptions.NotFoundError(str(prefix))
+
         else:
-            resp = await self.make_request(
-                'HEAD',
-                #functools.partial(self.bucket.new_key(prefix).generate_url, settings.TEMP_URL_SECS, 'HEAD'),
-                functools.partial(self.connection.generate_presigned_url, 'head_object', ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD', Params={'Bucket': self.bucket.name, 'Key': prefix}),
-                expects=(200, 404),
-                throws=exceptions.MetadataError,
-            )
-
-        await resp.release()
-
-        if resp.status == 404:
-            raise exceptions.NotFoundError(str(prefix))
+            try:
+                object_metadata = self.bucket.Object(wbpath.full_path).metadata
+            except ClientError:
+                raise exceptions.NotFoundError(str(prefix))
 
         return wbpath
 
@@ -431,16 +417,21 @@ class S3CompatProvider(provider.BaseProvider):
         if isinstance(contents, dict):
             contents = [contents]
 
-        items = []
-        # S3CompatFolderMetadata(self, {'Prefix': path.full_path})
+        items = [
+            S3CompatFolderMetadata(self, {'Prefix': path.full_path})
+        ]
 
         for content in contents:
             logger.info('_metadata_folder: content: {}: {}'.format(content['Key'], prefix))
             if content['Key'].lstrip('/') == prefix:  # self
-                items.append(S3CompatFolderMetadata(self, {'Prefix': path.full_path}))
-            elif content['Key'].endswith('/'):
+                logger.info('_metadata_folder: self: ---')
+                continue
+
+            if content['Key'].endswith('/'):
+                logger.info('_metadata_folder: folder: ---')
                 items.append(S3CompatFolderKeyMetadata(self, content))
             else:
+                logger.info('_metadata_folder: file: ---')
                 items.append(S3CompatFileMetadata(self, content))
 
         return items
