@@ -258,11 +258,19 @@ class S3CompatProvider(provider.BaseProvider):
                 )
 
         if path.is_file:
-            try:
-                resp = self.bucket.Object(path.full_path).delete()
-            except ClientError:
-                raise exceptions.DeleteError(str(path.full_path))
-
+            # try:
+            #     resp = self.bucket.Object(path.full_path).delete()
+            # except ClientError:
+            #     raise exceptions.DeleteError(str(path.full_path))
+            query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
+            delete_url = self.connection.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
+            resp = await self.make_request(
+                'DELETE',
+                delete_url,
+                expects=(200, 204, ),
+                throws=exceptions.DeleteError,
+            )
+            await resp.release()
         else:
             await self._delete_folder(path, **kwargs)
 
@@ -379,15 +387,17 @@ class S3CompatProvider(provider.BaseProvider):
         logger.info('_metadata_folder: {}:'.format(path.full_path))
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
 
-        resp = self.connection.s3.meta.client.list_objects(Bucket=self.bucket.name, Prefix=prefix)
+        resp = self.connection.s3.meta.client.list_objects_v2(Bucket=self.bucket.name, Prefix=prefix, Delimiter='/')
         contents = resp.get('Contents', [])
+        prefixes = parsed.get('CommonPrefixes', [])
 
         if len(list(contents)) == 0:
             raise exceptions.NotFoundError(str(path.full_path))
 
-        items = []
-        # S3CompatFolderMetadata(self, {'Prefix': path.full_path})
-        
+        items = [
+            S3CompatFolderMetadata(self, item)
+            for item in prefixes
+        ]
 
         for content in contents:
             logger.info('_metadata_folder: content: {}: {}'.format(content['Key'], prefix))
