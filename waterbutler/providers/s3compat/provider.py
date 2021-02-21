@@ -126,10 +126,9 @@ class S3CompatProvider(provider.BaseProvider):
 
         implicit_folder = path.endswith('/')
 
-        prefix = wbpath.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
         if implicit_folder:
             objects = await self.bucket.filter(Prefix=wbpath.full_path)
-            if len(list(objects)) == 0
+            if len(list(objects)) == 0:
                 raise exceptions.NotFoundError(str(prefix))
 
         else:
