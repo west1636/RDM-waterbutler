@@ -413,8 +413,8 @@ class S3CompatProvider(provider.BaseProvider):
         resp = self.connection.s3.meta.client.list_objects(Bucket=self.bucket.name, Prefix=prefix)
         contents = resp.get('Contents', [])
 
-        if isinstance(contents, dict):
-            contents = [contents]
+        if len(list(contents)) == 0:
+            raise exceptions.MetadataError(str(prefix))
 
         items = [
             S3CompatFolderMetadata(self, {'Prefix': path.full_path})
