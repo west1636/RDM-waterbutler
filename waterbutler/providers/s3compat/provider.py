@@ -129,13 +129,13 @@ class S3CompatProvider(provider.BaseProvider):
         if implicit_folder:
             objects = self.bucket.objects.filter(Prefix=wbpath.full_path)
             if len(list(objects)) == 0:
-                raise exceptions.NotFoundError(str(prefix))
+                raise exceptions.NotFoundError(str(path.full_path))
 
         else:
             try:
                 object_metadata = self.bucket.Object(wbpath.full_path).metadata
             except ClientError:
-                raise exceptions.NotFoundError(str(prefix))
+                raise exceptions.NotFoundError(str(path.full_path))
 
         return wbpath
 
@@ -258,15 +258,11 @@ class S3CompatProvider(provider.BaseProvider):
                 )
 
         if path.is_file:
-            query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
-            delete_url = self.connection.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
-            resp = await self.make_request(
-                'DELETE',
-                delete_url,
-                expects=(200, 204, ),
-                throws=exceptions.DeleteError,
-            )
-            await resp.release()
+            try:
+                resp = self.bucket.Object(path.full_path).delete()
+            except ClientError:
+                raise exceptions.DeleteError(str(path.full_path))
+
         else:
             await self._delete_folder(path, **kwargs)
 
@@ -295,6 +291,7 @@ class S3CompatProvider(provider.BaseProvider):
         if not path.full_path.endswith('/'):
             raise exceptions.InvalidParameters('not a folder: {}'.format(str(path)))
 
+        prefix = path.full_path.lstrip('/')
         contents = self.bucket.objects.filter(Prefix=path.full_path)
         content_keys = [content.key for content in contents]
 
