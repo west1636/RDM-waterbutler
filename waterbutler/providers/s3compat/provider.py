@@ -127,7 +127,7 @@ class S3CompatProvider(provider.BaseProvider):
         implicit_folder = path.endswith('/')
 
         if implicit_folder:
-            objects = await self.bucket.filter(Prefix=wbpath.full_path)
+            objects = await self.bucket.objects.filter(Prefix=wbpath.full_path)
             if len(list(objects)) == 0:
                 raise exceptions.NotFoundError(str(prefix))
 
@@ -414,7 +414,7 @@ class S3CompatProvider(provider.BaseProvider):
         contents = resp.get('Contents', [])
 
         if len(list(contents)) == 0:
-            raise exceptions.NotFoundError(str(prefix))
+            raise exceptions.NotFoundError(str(path.full_path))
 
         items = [
             S3CompatFolderMetadata(self, {'Prefix': path.full_path})
