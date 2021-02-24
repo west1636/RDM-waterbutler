@@ -33,7 +33,7 @@ class S3CompatConnection:
                  proxy_user=None, proxy_pass=None,
                  host=NoHostProvided, debug=0, https_connection_factory=None,
                  calling_format=None, path='/',
-                 provider='aws', bucket_class=Bucket, security_token=None,
+                 provider='aws', bucket_class=None, security_token=None,
                  suppress_consec_slashes=True, anon=False,
                  validate_certs=None, profile_name=None):
         port = 443
@@ -53,14 +53,6 @@ class S3CompatConnection:
             region_name=region,
             endpoint_url=url
         )
-
-    def add_auth(self, method, url, headers):
-        urlo = parse.urlparse(url)
-        self._auth_handler.add_auth(HTTPRequest(method, urlo.scheme,
-                                                urlo.hostname, self.port,
-                                                urlo.path, urlo.path, {},
-                                                headers, ''))
-        return url[:url.index('?')] if '?' in url else url
 
     def _required_auth_capability(self):
         return ['s3']
@@ -107,7 +99,7 @@ class S3CompatProvider(provider.BaseProvider):
             port = int(m.group(2))
         self.connection = S3CompatConnection(credentials['access_key'],
                                              credentials['secret_key'],
-                                             calling_format=OrdinaryCallingFormat(),
+                                             calling_format=None,
                                              host=host,
                                              port=port,
                                              is_secure=port == 443)
@@ -129,7 +121,7 @@ class S3CompatProvider(provider.BaseProvider):
 
         else:
             try:
-                object_metadata = self.bucket.Object(wbpath.full_path).metadata
+                self.bucket.Object(wbpath.full_path).metadata
             except ClientError:
                 raise exceptions.NotFoundError(str(path.full_path))
 
@@ -154,7 +146,7 @@ class S3CompatProvider(provider.BaseProvider):
         exists = await dest_provider.exists(dest_path)
         copy_source = {'Bucket': self.bucket.name, 'Key': source_path.full_path}
 
-        resp = dest_provider.bucket.Object(dest_path.full_path).copy_from(CopySource=copy_source)
+        dest_provider.bucket.Object(dest_path.full_path).copy_from(CopySource=copy_source)
 
         return (await dest_provider.metadata(dest_path)), not exists
 
@@ -170,10 +162,10 @@ class S3CompatProvider(provider.BaseProvider):
         if not path.is_file:
             raise exceptions.DownloadError('No file specified for download', code=400)
 
-        if kwargs.get('displayName'):
-            response_headers = {'response-content-disposition': 'attachment; filename*=UTF-8\'\'{}'.format(parse.quote(kwargs['displayName']))}
-        else:
-            response_headers = {'response-content-disposition': 'attachment'}
+        # if kwargs.get('displayName'):
+        #     response_headers = {'response-content-disposition': 'attachment; filename*=UTF-8\'\'{}'.format(parse.quote(kwargs['displayName']))}
+        # else:
+        #     response_headers = {'response-content-disposition': 'attachment'}
 
         headers = {}
         query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
