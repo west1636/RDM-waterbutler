@@ -1,11 +1,6 @@
 import hashlib
-from urllib import parse
 import re
 import logging
-
-from boto.s3.connection import OrdinaryCallingFormat, NoHostProvided
-from boto.connection import HTTPRequest
-from boto.s3.bucket import Bucket
 
 import boto3
 from botocore.exceptions import ClientError
@@ -26,12 +21,11 @@ from waterbutler.providers.s3compat.metadata import S3CompatFileMetadataHeaders
 logger = logging.getLogger(__name__)
 
 
-# class S3CompatConnection(S3Connection):
 class S3CompatConnection:
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
-                 host=NoHostProvided, debug=0, https_connection_factory=None,
+                 host=None, debug=0, https_connection_factory=None,
                  calling_format=None, path='/',
                  provider='aws', bucket_class=None, security_token=None,
                  suppress_consec_slashes=True, anon=False,
