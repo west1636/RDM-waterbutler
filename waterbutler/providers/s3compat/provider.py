@@ -1,19 +1,14 @@
-import os
 import hashlib
-import functools
 from urllib import parse
 import re
 import logging
 
-import xmltodict
-
-from boto.s3.connection import S3Connection, OrdinaryCallingFormat, NoHostProvided
+from boto.s3.connection import OrdinaryCallingFormat, NoHostProvided
 from boto.connection import HTTPRequest
 from boto.s3.bucket import Bucket
-from botocore.exceptions import ClientError
 
 import boto3
-import botocore
+from botocore.exceptions import ClientError
 # from boto3 import exception
 
 from waterbutler.core import streams
@@ -220,15 +215,15 @@ class S3CompatProvider(provider.BaseProvider):
         # assert resp.e_tag.replace('"', '') == stream.writers['md5'].hexdigest
 
         headers = {'Content-Length': str(stream.size)}
-        
+
         # this is usually set in boto.s3.key.generate_url, but do it here
         # do be explicit about our header payloads for signing purposes
         if self.encrypt_uploads:
             headers['x-amz-server-side-encryption'] = 'AES256'
-         
+
         query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
         upload_url = self.connection.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='PUT')
-        
+
         resp = await self.make_request(
             'PUT',
             upload_url,
