@@ -73,6 +73,7 @@ class S3CompatConnection:
     def generate_presigned_url(self, ClientMethod, Params=None, ExpiresIn=3600, HttpMethod=None):
         return self.s3.meta.client.generate_presigned_url(ClientMethod, Params=Params, ExpiresIn=ExpiresIn, HttpMethod=HttpMethod)
 
+
 class S3CompatProvider(provider.BaseProvider):
     """Provider for S3 Compatible Storage service.
 
@@ -156,7 +157,7 @@ class S3CompatProvider(provider.BaseProvider):
         `dest_provider` must have read access to `source.bucket`.
         """
         exists = await dest_provider.exists(dest_path)
-        copy_source={'Bucket': self.bucket.name, 'Key': source_path.full_path}
+        copy_source = {'Bucket': self.bucket.name, 'Key': source_path.full_path}
 
         resp = dest_provider.bucket.Object(dest_path.full_path).copy_from(CopySource=copy_source)
 
@@ -182,7 +183,7 @@ class S3CompatProvider(provider.BaseProvider):
         headers = {}
         query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
         if version and version.lower() != 'latest':
-            query_parameters['VersionId'] =  version
+            query_parameters['VersionId'] = version
 
         raw_url = self.connection.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='GET')
 
@@ -330,7 +331,7 @@ class S3CompatProvider(provider.BaseProvider):
         """
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
         try:
-            resp = self.connection.s3.meta.client.list_object_versions(Bucket=self.bucket.name, Prefix=prefix)
+            resp = self.connection.s3.meta.client.list_object_versions(Bucket=self.bucket.name, Prefix=prefix, Delimiter='/')
         except ClientError as e:
             # MinIO may not support "versions" from generate_url() of boto2.
             # (And, MinIO does not support ListObjectVersions yet.)

@@ -140,7 +140,7 @@ class S3CompatRevision(metadata.BaseFileRevisionMetadata):
 
     @property
     def version(self):
-        if self.raw['IsLatest'] == True:
+        if self.raw['IsLatest'] is True:
             return 'Latest'
         return self.raw['VersionId']
 
