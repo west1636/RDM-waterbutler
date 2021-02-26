@@ -50,7 +50,7 @@ class S3CompatConnection:
             endpoint_url=endpoint_url
         )
         self.endpoint_url = endpoint_url
-        self.region = region
+        self.region_name = region_name
 
     def generate_presigned_url(self, ClientMethod, Params=None, ExpiresIn=3600, HttpMethod=None):
         return self.s3.meta.client.generate_presigned_url(ClientMethod, Params=Params, ExpiresIn=ExpiresIn, HttpMethod=HttpMethod)
@@ -117,7 +117,7 @@ class S3CompatProvider(provider.BaseProvider):
         implicit_folder = path.endswith('/')
 
         if implicit_folder:
-            objects = self.bucket.objects.filter(Prefix=wbpath.full_path)
+            objects = self.bucket.objects.filter(Prefix=wbpath.full_path, Delimiter='/')
             if len(list(objects)) == 0:
                 raise exceptions.NotFoundError(str(path.full_path))
 
