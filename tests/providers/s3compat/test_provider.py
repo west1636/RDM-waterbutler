@@ -329,7 +329,7 @@ class TestProviderConstruction:
         assert provider.connection.endpoint_url == 'http://normalhost'
 
     def test_region(self, auth, credentials, settings):
-        provider = S3CompatProvider(auth, {'host': 'namespace.usr.region1.oraclecloud.com',
+        provider = S3CompatProvider(auth, {'host': 'namespace.user.region1.oraclecloud.com',
                                            'access_key': 'a',
                                            'secret_key': 's'}, settings)
         assert provider.connection.region_name == 'region1'
@@ -355,14 +355,14 @@ class TestValidatePath:
         assert WaterButlerPath('/') == await provider.validate_v1_path('/')
 
         with pytest.raises(exceptions.NotFoundError) as exc:
-            await provider.validate_v1_path('/' + file_path + '/')
+            await provider.validate_v1_path('/' + file_path)
 
         mock_object = mock.MagicMock()
         mock_object.cur_mock.execute.return_value = {}
         mock_bucket = mock.MagicMock()
         mock_bucket.cur_mock.execute.return_value = mock_object
         with mock.patch('self.bucket', return_value=mock_bucket):
-            wb_path_v1 = await provider.validate_v1_path('/' + file_path + '/')
+            wb_path_v1 = await provider.validate_v1_path('/' + file_path)
         assert mock_bucket.Object.assert_called_once_with(full_path)
 
         wb_path_v0 = await provider.validate_path('/' + file_path)
@@ -379,23 +379,17 @@ class TestValidatePath:
             full_path = prefix + full_path
 
         params_for_dir = {'prefix': full_path + '/', 'delimiter': '/'}
-        good_metadata_url = provider.bucket.generate_url(100)
-        bad_metadata_url = provider.bucket.new_key(full_path).generate_url(100, 'HEAD')
-        aiohttpretty.register_uri(
-            'GET', good_metadata_url, params=params_for_dir,
-            body=folder_metadata, headers={'Content-Type': 'application/xml'}
-        )
-        aiohttpretty.register_uri('HEAD', bad_metadata_url, status=404)
-
-        try:
-            wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
-        except Exception as exc:
-            pytest.fail(str(exc))
 
         with pytest.raises(exceptions.NotFoundError) as exc:
-            await provider.validate_v1_path('/' + folder_path)
+            await provider.validate_v1_path('/' + folder_path + '/')
 
-        assert exc.value.code == client.NOT_FOUND
+        mock_object = mock.MagicMock()
+        mock_object.cur_mock.execute.return_value = {}
+        mock_objects = mock.MagicMock()
+        mock_objects.cur_mock.execute.return_value = mock_object
+        with mock.patch('self.bucket.objects', return_value=mock_objects):
+            wb_path_v1 = await provider.validate_v1_path('/' + file_path)
+        assert mock_objects.filter.assert_called_once_with(Prefix=full_path, Delimiter='/')
 
         wb_path_v0 = await provider.validate_path('/' + folder_path + '/')
 
