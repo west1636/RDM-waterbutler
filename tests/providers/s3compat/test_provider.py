@@ -32,7 +32,7 @@ def auth():
 @pytest.fixture
 def credentials():
     return {
-        'host': 'Target Host',
+        'host': 'Target.Host',
         'access_key': 'Dont dead',
         'secret_key': 'open inside',
     }
