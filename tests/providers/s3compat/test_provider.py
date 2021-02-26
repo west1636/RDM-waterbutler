@@ -310,31 +310,34 @@ class TestProviderConstruction:
         provider = S3CompatProvider(auth, {'host': 'securehost',
                                            'access_key': 'a',
                                            'secret_key': 's'}, settings)
-        assert provider.connection.is_secure
-        assert provider.connection.host == 'securehost'
-        assert provider.connection.port == 443
+        assert provider.connection.endpoint_url == 'https://securehost'
 
         provider = S3CompatProvider(auth, {'host': 'securehost:443',
                                            'access_key': 'a',
                                            'secret_key': 's'}, settings)
-        assert provider.connection.is_secure
-        assert provider.connection.host == 'securehost'
-        assert provider.connection.port == 443
+        assert provider.connection.endpoint_url == 'https://securehost'
 
     def test_http(self, auth, credentials, settings):
         provider = S3CompatProvider(auth, {'host': 'normalhost:80',
                                            'access_key': 'a',
                                            'secret_key': 's'}, settings)
-        assert not provider.connection.is_secure
-        assert provider.connection.host == 'normalhost'
-        assert provider.connection.port == 80
+        assert provider.connection.endpoint_url == 'http://normalhost'
 
         provider = S3CompatProvider(auth, {'host': 'normalhost:8080',
                                            'access_key': 'a',
                                            'secret_key': 's'}, settings)
-        assert not provider.connection.is_secure
-        assert provider.connection.host == 'normalhost'
-        assert provider.connection.port == 8080
+        assert provider.connection.endpoint_url == 'http://normalhost'
+
+    def test_region(self, auth, credentials, settings):
+        provider = S3CompatProvider(auth, {'host': 'namespace.usr.region1.oraclecloud.com',
+                                           'access_key': 'a',
+                                           'secret_key': 's'}, settings)
+        assert provider.connection.region == 'region1'
+
+        provider = S3CompatProvider(auth, {'host': 'securehost:443',
+                                           'access_key': 'a',
+                                           'secret_key': 's'}, settings)
+        assert provider.connection.region == ''
 
 
 class TestValidatePath:
@@ -348,22 +351,19 @@ class TestValidatePath:
         if prefix:
             full_path = prefix + full_path
         params_for_dir = {'prefix': full_path + '/', 'delimiter': '/'}
-        good_metadata_url = provider.bucket.new_key(full_path).generate_url(100, 'HEAD')
-        bad_metadata_url = provider.bucket.generate_url(100)
-        aiohttpretty.register_uri('HEAD', good_metadata_url, headers=file_metadata)
-        aiohttpretty.register_uri('GET', bad_metadata_url, params=params_for_dir, status=404)
 
         assert WaterButlerPath('/') == await provider.validate_v1_path('/')
-
-        try:
-            wb_path_v1 = await provider.validate_v1_path('/' + file_path)
-        except Exception as exc:
-            pytest.fail(str(exc))
 
         with pytest.raises(exceptions.NotFoundError) as exc:
             await provider.validate_v1_path('/' + file_path + '/')
 
-        assert exc.value.code == client.NOT_FOUND
+        mock_object = mock.MagicMock()
+        mock_object.cur_mock.execute.return_value = {}
+        mock_bucket = mock.MagicMock()
+        mock_bucket.cur_mock.execute.return_value = mock_object
+        with mock.patch('self.bucket', return_value=mock_bucket):
+            wb_path_v1 = await provider.validate_v1_path('/' + file_path + '/')
+        assert mock_bucket.Object.assert_called_once_with(full_path)
 
         wb_path_v0 = await provider.validate_path('/' + file_path)
 

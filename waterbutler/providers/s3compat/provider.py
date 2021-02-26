@@ -49,6 +49,8 @@ class S3CompatConnection:
             region_name=region_name,
             endpoint_url=endpoint_url
         )
+        self.endpoint_url = endpoint_url
+        self.region = region
 
     def generate_presigned_url(self, ClientMethod, Params=None, ExpiresIn=3600, HttpMethod=None):
         return self.s3.meta.client.generate_presigned_url(ClientMethod, Params=Params, ExpiresIn=ExpiresIn, HttpMethod=HttpMethod)
