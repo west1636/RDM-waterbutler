@@ -97,8 +97,8 @@ class S3CompatProvider(provider.BaseProvider):
         #                                      port=port,
         #                                      is_secure=port == 443)
         region = ''
-        if host.endswith('.oraclecloud.com')
-            region = host.split('.')[3]
+        if host.endswith('.oraclecloud.com'):
+            region = host.split('.')[-3]
         endpoint_url = ('https://' if port == 443 else 'http://') + host
         self.connection = S3CompatConnection(credentials['access_key'],
                                              credentials['secret_key'],
