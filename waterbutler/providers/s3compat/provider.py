@@ -22,34 +22,33 @@ logger = logging.getLogger(__name__)
 
 
 class S3CompatConnection:
+    # def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
+    #              is_secure=True, port=None, proxy=None, proxy_port=None,
+    #              proxy_user=None, proxy_pass=None,
+    #              host=None, debug=0, https_connection_factory=None,
+    #             calling_format=None, path='/',
+    #              provider='aws', bucket_class=None, security_token=None,
+    #              suppress_consec_slashes=True, anon=False,
+    #             validate_certs=None, profile_name=None):
+    #     port = 443
+    #     m = re.match(r'^(.+)\:([0-9]+)$', host)
+    #     if m is not None:
+    #         host = m.group(1)
+    #         port = int(m.group(2))
+    #     # if not s3_config.get('s3', 'use-sigv4'):
+    #     #     s3_config.add_section('s3')
+    #     #     s3_config.set('s3', 'use-sigv4', 'True')
+    #    region = host.split('.')[3]
+    #    url = ('https://' if port == 443 else 'http://') + host
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=True, port=None, proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None,
-                 host=None, debug=0, https_connection_factory=None,
-                 calling_format=None, path='/',
-                 provider='aws', bucket_class=None, security_token=None,
-                 suppress_consec_slashes=True, anon=False,
-                 validate_certs=None, profile_name=None):
-        port = 443
-        m = re.match(r'^(.+)\:([0-9]+)$', host)
-        if m is not None:
-            host = m.group(1)
-            port = int(m.group(2))
-        # if not s3_config.get('s3', 'use-sigv4'):
-        #     s3_config.add_section('s3')
-        #     s3_config.set('s3', 'use-sigv4', 'True')
-        region = host.split('.')[3]
-        url = ('https://' if port == 443 else 'http://') + host
+                endpoint_url=None, region_name=None):
         self.s3 = boto3.resource(
             's3',
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
-            region_name=region,
-            endpoint_url=url
+            region_name=region_name,
+            endpoint_url=endpoint_url
         )
-
-    def _required_auth_capability(self):
-        return ['s3']
 
     def generate_presigned_url(self, ClientMethod, Params=None, ExpiresIn=3600, HttpMethod=None):
         return self.s3.meta.client.generate_presigned_url(ClientMethod, Params=Params, ExpiresIn=ExpiresIn, HttpMethod=HttpMethod)
@@ -91,12 +90,19 @@ class S3CompatProvider(provider.BaseProvider):
         if m is not None:
             host = m.group(1)
             port = int(m.group(2))
+        # self.connection = S3CompatConnection(credentials['access_key'],
+        #                                      credentials['secret_key'],
+        #                                      calling_format=None,
+        #                                      host=host,
+        #                                      port=port,
+        #                                      is_secure=port == 443)
+        region = ''
+        if host.endswith('.oraclecloud.com')
+            region = host.split('.')[3]
+        endpoint_url = ('https://' if port == 443 else 'http://') + host
         self.connection = S3CompatConnection(credentials['access_key'],
                                              credentials['secret_key'],
-                                             calling_format=None,
-                                             host=host,
-                                             port=port,
-                                             is_secure=port == 443)
+                                             endpoint_url, region)
         self.bucket = self.connection.s3.Bucket(settings['bucket'])
         self.encrypt_uploads = self.settings.get('encrypt_uploads', False)
         self.prefix = settings.get('prefix', '')
