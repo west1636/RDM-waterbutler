@@ -246,10 +246,6 @@ class S3CompatProvider(provider.BaseProvider):
                 )
 
         if path.is_file:
-            # try:
-            #     resp = self.bucket.Object(path.full_path).delete()
-            # except ClientError:
-            #     raise exceptions.DeleteError(str(path.full_path))
             query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
             delete_url = self.connection.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='DELETE')
             resp = await self.make_request(
