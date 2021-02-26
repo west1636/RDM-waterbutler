@@ -41,7 +41,7 @@ def credentials():
 @pytest.fixture
 def settings():
     return {
-        'bucket': 'that kerning',
+        'bucket': 'that_kerning',
         'encrypt_uploads': False
     }
 
@@ -429,7 +429,9 @@ class TestCRUD:
     @pytest.mark.aiohttpretty
     async def test_download(self, provider, mock_time):
         path = WaterButlerPath('/muhtriangle', prepend=provider.prefix)
-        url = provider.bucket.new_key(path.full_path).generate_url(100, response_headers={'response-content-disposition': 'attachment'})
+        # url = provider.bucket.new_key(path.full_path).generate_url(100, response_headers={'response-content-disposition': 'attachment'})
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url[:url.index('?')], body=b'delicious', auto_length=True)
 
         result = await provider.download(path)
@@ -441,11 +443,13 @@ class TestCRUD:
     @pytest.mark.aiohttpretty
     async def test_download_version(self, provider, mock_time):
         path = WaterButlerPath('/muhtriangle', prepend=provider.prefix)
-        url = provider.bucket.new_key(path.full_path).generate_url(
-            100,
-            query_parameters={'versionId': 'someversion'},
-            response_headers={'response-content-disposition': 'attachment'},
-        )
+        # url = provider.bucket.new_key(path.full_path).generate_url(
+        #     100,
+        #     query_parameters={'versionId': 'someversion'},
+        #     response_headers={'response-content-disposition': 'attachment'},
+        # )
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path, 'VersionId': 'someversion'}
+        url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url[:url.index('?')], body=b'delicious', auto_length=True)
 
         result = await provider.download(path, version='someversion')
