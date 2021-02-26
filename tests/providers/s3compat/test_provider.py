@@ -332,12 +332,12 @@ class TestProviderConstruction:
         provider = S3CompatProvider(auth, {'host': 'namespace.usr.region1.oraclecloud.com',
                                            'access_key': 'a',
                                            'secret_key': 's'}, settings)
-        assert provider.connection.region == 'region1'
+        assert provider.connection.region_name == 'region1'
 
         provider = S3CompatProvider(auth, {'host': 'securehost:443',
                                            'access_key': 'a',
                                            'secret_key': 's'}, settings)
-        assert provider.connection.region == ''
+        assert provider.connection.region_name == ''
 
 
 class TestValidatePath:
