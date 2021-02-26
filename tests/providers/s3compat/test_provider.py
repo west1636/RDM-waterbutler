@@ -432,7 +432,8 @@ class TestCRUD:
         # url = provider.bucket.new_key(path.full_path).generate_url(100, response_headers={'response-content-disposition': 'attachment'})
         query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
         url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
-        aiohttpretty.register_uri('GET', url[:url.index('?')], body=b'delicious', auto_length=True)
+        # aiohttpretty.register_uri('GET', url[:url.index('?')], body=b'delicious', auto_length=True)
+        aiohttpretty.register_uri('GET', url, body=b'delicious', auto_length=True)
 
         result = await provider.download(path)
         content = await result.read()
@@ -450,7 +451,8 @@ class TestCRUD:
         # )
         query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path, 'VersionId': 'someversion'}
         url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
-        aiohttpretty.register_uri('GET', url[:url.index('?')], body=b'delicious', auto_length=True)
+        # aiohttpretty.register_uri('GET', url[:url.index('?')], body=b'delicious', auto_length=True)
+        aiohttpretty.register_uri('GET', url, body=b'delicious', auto_length=True)
 
         result = await provider.download(path, version='someversion')
         content = await result.read()
