@@ -62,6 +62,9 @@ def provider(auth, credentials, settings):
         provider = S3CompatProvider(auth, credentials, settings)
         s3client = boto3.client('s3')
         s3client.create_bucket(Bucket=provider.bucket.name)
+        s3 = boto3.resource('s3')
+        provider.connection.s3 = s3
+        provider.bucket = s3.Bucket(provider.bucket.name)
         return provider
 
 
