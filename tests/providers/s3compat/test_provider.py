@@ -564,7 +564,7 @@ class TestCRUD:
 
         # params = {'prefix': path.full_path.lstrip('/')}
         # query_url = provider.bucket.generate_url(100, 'GET')
-        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        query_parameters = {'Bucket': provider.bucket.name, 'Prefix': path.full_path, 'Delimiter': '/'}
         url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
 
         aiohttpretty.register_uri(
@@ -609,7 +609,7 @@ class TestMetadata:
         # params = build_folder_params(path)
         # aiohttpretty.register_uri('GET', url, params=params, body=folder_metadata,
         #                           headers={'Content-Type': 'application/xml'})
-        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        query_parameters = {'Bucket': provider.bucket.name, 'Prefix': path.full_path, 'Delimiter': '/'}
         url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url, params=params, body=folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
@@ -627,7 +627,7 @@ class TestMetadata:
         # url = provider.bucket.generate_url(100)
         # params = build_folder_params(path)
         # aiohttpretty.register_uri('GET', url, params=params, body=contents_and_self)
-        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        query_parameters = {'Bucket': provider.bucket.name, 'Prefix': path.full_path, 'Delimiter': '/'}
         url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url, params=params, body=contents_and_self)
 
@@ -646,7 +646,7 @@ class TestMetadata:
         # params = build_folder_params(path)
         # aiohttpretty.register_uri('GET', url, params=params, body=just_a_folder_metadata,
         #                          headers={'Content-Type': 'application/xml'})
-        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        query_parameters = {'Bucket': provider.bucket.name, 'Prefix': path.full_path, 'Delimiter': '/'}
         url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url, body=just_a_folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
@@ -729,7 +729,7 @@ class TestCreateFolder:
         # params = build_folder_params(path)
         # aiohttpretty.register_uri('GET', url, params=params, body=just_a_folder_metadata,
         #                           headers={'Content-Type': 'application/xml'})
-        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        query_parameters = {'Bucket': provider.bucket.name, 'Prefix': path.full_path, 'Delimiter': '/'}
         url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url, body=just_a_folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
