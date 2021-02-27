@@ -366,13 +366,16 @@ class TestValidatePath:
 
         assert WaterButlerPath('/') == await provider.validate_v1_path('/')
 
-        # with pytest.raises(exceptions.NotFoundError) as exc:
-        #     await provider.validate_v1_path('/' + file_path)
+        with pytest.raises(exceptions.NotFoundError) as exc:
+             await provider.validate_v1_path('/' + file_path)
 
-        mock_object = mock.MagicMock()
-        mock_object.metadata.execute.return_value = {}
-        provider.bucket.Object = mock.MagicMock(return_value=mock_object)
-        wb_path_v1 = await provider.validate_v1_path('/' + file_path)
+        with mock_s3():
+            provider.bucket.put_object(Key=full_path, Body='')
+
+        # mock_object = mock.MagicMock()
+        # mock_object.metadata.execute.return_value = {}
+        # provider.bucket.Object = mock.MagicMock(return_value=mock_object)
+        #wb_path_v1 = await provider.validate_v1_path('/' + file_path)
         # assert mock_object.assert_called_once_with(full_path)
         # assert mock_object.assert_called()
 
@@ -389,36 +392,13 @@ class TestValidatePath:
         if prefix:
             full_path = prefix + full_path
 
-        params_for_dir = {'prefix': full_path + '/', 'delimiter': '/'}
-        provider.bucket.put_object(Key=full_path + '/', Body='')
+        with pytest.raises(exceptions.NotFoundError) as exc:
+            await provider.validate_v1_path('/' + folder_path + '/')
 
-        # with pytest.raises(exceptions.NotFoundError) as exc:
-        #     await provider.validate_v1_path('/' + folder_path + '/')
+        with mock_s3():
+          provider.bucket.put_object(Key=full_path + '/', Body='')
 
-        # mock_key = mock.PropertyMock(return_value='Photos/')
-        # mock_object = mock.MagicMock()
-        # type(mock_object).key = mock_key
-        # mock_object.key.execute.return_value = 'Photos/'
-        # mock_filter = mock.MagicMock()
-        # mock_filter.filter.execute.return_value=[mock_object]
-        # mock_objects = mock.PropertyMock(return_value=mock_filter)
-        # mock_bucket = mock.MagicMock()
-        # type(mock_bucket).objects = mock_objects
-        # provider.bucket = mock_bucket
-
-        # with mock.patch('boto3.resources.collection.ResourceCollection.filter',
-        #     return_value=['mock_object']) as mock_filter:
-        #     wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
-            # try:
-            #   wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
-            #except exceptions.NotFoundError:
-
-        # try:
-        #    wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
-        # except exceptions.NotFoundError:
         wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
-        # assert mock_filter.assert_called_with(Prefix=full_path, Delimiter='/')
-        # assert mock_object.key.assert_called_with()
 
         wb_path_v0 = await provider.validate_path('/' + folder_path + '/')
 
