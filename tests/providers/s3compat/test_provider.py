@@ -58,6 +58,7 @@ def mock_time(monkeypatch):
 def provider(auth, credentials, settings):
     # return S3CompatProvider(auth, credentials, settings)
     with mock_s3():
+        boto3.DEFAULT_SESSION = None
         provider = S3CompatProvider(auth, credentials, settings)
         s3client = boto3.client('s3')
         s3client.create_bucket(Bucket=provider.bucket.name)
@@ -65,7 +66,6 @@ def provider(auth, credentials, settings):
         s3 = boto3.resource('s3')
         provider.connection.s3 = s3
         provider.bucket = s3.Bucket(provider.bucket.name)
-        len(list(provider.bucket.objects.filter(Prefix='foo/')))
         return provider
 
 
