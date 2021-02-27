@@ -9,6 +9,7 @@ import hashlib
 from http import client
 from unittest import mock
 
+import boto3
 from moto import mock_s3
 
 import aiohttpretty
