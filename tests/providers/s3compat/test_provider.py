@@ -366,8 +366,12 @@ class TestValidatePath:
 
         assert WaterButlerPath('/') == await provider.validate_v1_path('/')
 
-        with pytest.raises(exceptions.NotFoundError) as exc:
-             await provider.validate_v1_path('/' + file_path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            with pytest.raises(exceptions.NotFoundError) as exc:
+                 await provider.validate_v1_path('/' + file_path)
 
         with mock_s3():
             boto3.DEFAULT_SESSION = None
@@ -401,7 +405,7 @@ class TestValidatePath:
             s3client = boto3.client('s3')
             s3client.create_bucket(Bucket=provider.bucket.name)
             s3client.put_object(Bucket=provider.bucket.name, Key=full_path + '/')
-            wb_path_v1 = await provider.validate_v1_path('/' + file_path + '/')
+            wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
 
         wb_path_v0 = await provider.validate_path('/' + folder_path + '/')
 
@@ -605,14 +609,13 @@ class TestCRUD:
             delete_urls.append(delete_url)
             aiohttpretty.register_uri('DELETE', delete_url, status=204)
 
-            mock_item = mock.MagicMock()
-            mock_item.key.execute.return_value = i
-            mock_items.append(mock_item)
-
-        mock_filter = mock.MagicMock(return_value=mock_items)
-        provider.bucket.objects.filter = mock_filter
-
-        await provider.delete(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            for i in target_items:
+                s3client.put_object(Bucket=provider.bucket.name, Key=i)
+            await provider.delete(path)
 
         # assert aiohttpretty.has_call(method='GET', uri=query_url, params=params)
         for delete_url in delete_urls:
