@@ -611,7 +611,7 @@ class TestMetadata:
         #                           headers={'Content-Type': 'application/xml'})
         query_parameters = {'Bucket': provider.bucket.name, 'Prefix': path.full_path, 'Delimiter': '/'}
         url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
-        aiohttpretty.register_uri('GET', url, params=params, body=folder_metadata,
+        aiohttpretty.register_uri('GET', url, body=folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
         assert isinstance(result, list)
@@ -629,7 +629,7 @@ class TestMetadata:
         # aiohttpretty.register_uri('GET', url, params=params, body=contents_and_self)
         query_parameters = {'Bucket': provider.bucket.name, 'Prefix': path.full_path, 'Delimiter': '/'}
         url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
-        aiohttpretty.register_uri('GET', url, params=params, body=contents_and_self)
+        aiohttpretty.register_uri('GET', url, body=contents_and_self)
 
         result = await provider.metadata(path)
 
@@ -780,7 +780,8 @@ class TestCreateFolder:
         query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
         url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
 
-        aiohttpretty.register_uri('GET', url, params=params, status=403)
+        # aiohttpretty.register_uri('GET', url, params=params, status=403)
+        aiohttpretty.register_uri('GET', url, status=403)
 
         with pytest.raises(exceptions.MetadataError) as e:
             await provider.create_folder(path)
@@ -838,9 +839,10 @@ class TestOperations:
         # url = provider.bucket.generate_url(100, 'GET', query_parameters={'versions': ''})
         # params = build_folder_params(path)
         # aiohttpretty.register_uri('GET', url, params=params, status=200, body=version_metadata)
+        # aiohttpretty.register_uri('GET', url, params=params, status=200, body=version_metadata)
         query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
         url = provider.connection.s3.meta.client.generate_presigned_url('list_object_versions', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
-        aiohttpretty.register_uri('GET', url, params=params, status=200, body=version_metadata)
+        aiohttpretty.register_uri('GET', url, status=200, body=version_metadata)
 
         data = await provider.revisions(path)
 
@@ -852,7 +854,8 @@ class TestOperations:
             assert hasattr(item, 'version')
             assert hasattr(item, 'version_identifier')
 
-        assert aiohttpretty.has_call(method='GET', uri=url, params=params)
+        # assert aiohttpretty.has_call(method='GET', uri=url, params=params)
+        assert aiohttpretty.has_call(method='GET', uri=url)
 
     async def test_equality(self, provider, mock_time):
         assert provider.can_intra_copy(provider)
