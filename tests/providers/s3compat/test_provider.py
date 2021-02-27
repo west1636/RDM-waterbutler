@@ -65,6 +65,7 @@ def provider(auth, credentials, settings):
         s3 = boto3.resource('s3')
         provider.connection.s3 = s3
         provider.bucket = s3.Bucket(provider.bucket.name)
+        len(list(provider.bucket.objects.filter(Prefix='foo/')))
         return provider
 
 
