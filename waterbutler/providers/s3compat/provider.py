@@ -319,7 +319,7 @@ class S3CompatProvider(provider.BaseProvider):
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
 
         query_parameters = {'Bucket': self.bucket.name, 'Prefix': prefix, 'Delimiter': '/'}
-        url = self.connection.generate_presigned_urlgenerate_presigned_url('list_object_versions', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='GET')
+        url = self.connection.generate_presigned_url('list_object_versions', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='GET')
         try:
             resp = await self.make_request(
                 'GET',
