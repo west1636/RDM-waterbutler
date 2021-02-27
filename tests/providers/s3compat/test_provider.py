@@ -58,11 +58,11 @@ def mock_time(monkeypatch):
 def provider(auth, credentials, settings):
     # return S3CompatProvider(auth, credentials, settings)
     with mock_s3():
-        # provider = S3CompatProvider(auth, credentials, settings)
+        provider = S3CompatProvider(auth, credentials, settings)
         s3client = boto3.client('s3')
         s3client.create_bucket(Bucket=provider.bucket.name)
         # s3client.put_object(Bucket=provider.bucket.name, Key=full_path + '/')
-        return S3CompatProvider(auth, credentials, settings)
+        return provider
 
 
 @pytest.fixture
