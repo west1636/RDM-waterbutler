@@ -357,8 +357,7 @@ class TestValidatePath:
         # with pytest.raises(exceptions.NotFoundError) as exc:
         #     await provider.validate_v1_path('/' + file_path)
 
-        mock_object = mock.MagicMock()
-        mock_object.cur_mock.execute.return_value = {}
+        mock_object = mock.MagicMock(return_value={})
         provider.bucket.Object = mock_object
         wb_path_v1 = await provider.validate_v1_path('/' + file_path)
         # assert mock_object.assert_called_once_with(full_path)
@@ -382,9 +381,8 @@ class TestValidatePath:
         # with pytest.raises(exceptions.NotFoundError) as exc:
         #     await provider.validate_v1_path('/' + folder_path + '/')
 
-        mock_object = mock.MagicMock()
-        mock_object.cur_mock.execute.return_value = {}
-        provider.bucket.objects = mock_object
+        mock_object = mock.MagicMock(return_value={})
+        provider.bucket.objects.filter = mock_object
         wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
         # assert mock_object.assert_called_once_with(Prefix=full_path, Delimiter='/')
         # assert mock_object.assert_called()
@@ -592,13 +590,11 @@ class TestCRUD:
             aiohttpretty.register_uri('DELETE', delete_url, status=204)
 
             mock_item = mock.MagicMock()
-            mock_item.cur_mock.execute.return_value = i
+            mock_item.key.execute.return_value = i
             mock_items.append(mock_item)
 
-        mock_filter = mock.MagicMock()
-        mock_filter.cur_mock.execute.return_value = mock_items
-
-        provider.bucket.objects = mock_filter
+        mock_filter = mock.MagicMock(return_value=mock_items)
+        provider.bucket.objects.filter = mock_filter
 
         await provider.delete(path)
 
