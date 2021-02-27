@@ -2,6 +2,9 @@ import pytest
 
 from tests import utils
 
+import boto3
+from moto import mock_s3
+
 from waterbutler.providers.s3compatinstitutions import S3CompatInstitutionsProvider
 from tests.providers.s3compat.test_provider import (
     TestProviderConstruction,
@@ -42,7 +45,16 @@ def settings(base_prefix):
 
 @pytest.fixture
 def provider(auth, credentials, settings):
-    return S3CompatInstitutionsProvider(auth, credentials, settings)
+    # return S3CompatInstitutionsProvider(auth, credentials, settings)
+    with mock_s3():
+        boto3.DEFAULT_SESSION = None
+        provider = S3CompatInstitutionsProvider(auth, credentials, settings)
+        s3client = boto3.client('s3')
+        s3client.create_bucket(Bucket=provider.bucket.name)
+        s3 = boto3.resource('s3')
+        provider.connection.s3 = s3
+        provider.bucket = s3.Bucket(provider.bucket.name)
+        return provider
 
 class TestProviderConstruction2(TestProviderConstruction):
     pass

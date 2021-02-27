@@ -370,6 +370,8 @@ class TestValidatePath:
             boto3.DEFAULT_SESSION = None
             s3client = boto3.client('s3')
             s3client.create_bucket(Bucket=provider.bucket.name)
+            s3 = boto3.resource('s3')
+            provider.bucket = s3.Bucket(provider.bucket.name)
             with pytest.raises(exceptions.NotFoundError) as exc:
                  await provider.validate_v1_path('/' + file_path)
 
@@ -378,6 +380,8 @@ class TestValidatePath:
             s3client = boto3.client('s3')
             s3client.create_bucket(Bucket=provider.bucket.name)
             s3client.put_object(Bucket=provider.bucket.name, Key=full_path)
+            s3 = boto3.resource('s3')
+            provider.bucket = s3.Bucket(provider.bucket.name)
             wb_path_v1 = await provider.validate_v1_path('/' + file_path)
 
         wb_path_v0 = await provider.validate_path('/' + file_path)
@@ -650,7 +654,7 @@ class TestMetadata:
         assert len(result) == 3
         assert result[0].name == '   photos'
         assert result[1].name == 'my-image.jpg'
-        assert result[1].name == 'my-third-image.jpg'
+        assert result[2].name == 'my-third-image.jpg'
         # assert result[2].extra['md5'] == '1b2cf535f27731c974343645a3985328'
 
     @pytest.mark.asyncio
