@@ -361,8 +361,10 @@ class TestValidatePath:
         mock_object.cur_mock.execute.return_value = {}
         mock_bucket = mock.MagicMock()
         mock_bucket.cur_mock.execute.return_value = mock_object
-        with mock.patch('self.bucket', return_value=mock_bucket):
-            wb_path_v1 = await provider.validate_v1_path('/' + file_path)
+        provider.bucket = mock_bucket
+        wb_path_v1 = await provider.validate_v1_path('/' + file_path)
+        # with mock.patch('self.bucket', return_value=mock_bucket):
+        #     wb_path_v1 = await provider.validate_v1_path('/' + file_path)
         assert mock_bucket.Object.assert_called_once_with(full_path)
 
         wb_path_v0 = await provider.validate_path('/' + file_path)
@@ -387,8 +389,13 @@ class TestValidatePath:
         mock_object.cur_mock.execute.return_value = {}
         mock_objects = mock.MagicMock()
         mock_objects.cur_mock.execute.return_value = mock_object
-        with mock.patch('self.bucket.objects', return_value=mock_objects):
-            wb_path_v1 = await provider.validate_v1_path('/' + file_path)
+        mock_bucket = mock.MagicMock()
+        mock_bucket.cur_mock.execute.return_value = mock_objects
+        provider.bucket = mock_bucket
+        wb_path_v1 = await provider.validate_v1_path('/' + file_path)
+        assert mock_bucket.Objects.assert_called_once_with()
+        # with mock.patch('self.bucket.objects', return_value=mock_objects):
+        #     wb_path_v1 = await provider.validate_v1_path('/' + file_path)
         assert mock_objects.filter.assert_called_once_with(Prefix=full_path, Delimiter='/')
 
         wb_path_v0 = await provider.validate_path('/' + folder_path + '/')
