@@ -361,7 +361,7 @@ class S3CompatProvider(provider.BaseProvider):
             revision = 'null'
         logger.info('_metadata_file: {}: {}: {}'.format(self.bucket.name, path.full_path, revision))
         query_parameters = {'Bucket': self.bucket.name, 'Key': path.full_path}
-        metadata_url = self.generate_presigned_url('head_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD')
+        metadata_url = self.connection.generate_presigned_url('head_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD')
         resp = await self.make_request(
             'HEAD',
             metadata_url,
