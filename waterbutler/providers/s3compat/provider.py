@@ -364,12 +364,7 @@ class S3CompatProvider(provider.BaseProvider):
         metadata_url = self.generate_presigned_url('head_object', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='HEAD')
         resp = await self.make_request(
             'HEAD',
-            functools.partial(
-                metadata_url,
-                settings.TEMP_URL_SECS,
-                'HEAD',
-                query_parameters={'versionId': revision} if revision else None
-            ),
+            metadata_url,
             expects=(200, ),
             throws=exceptions.MetadataError,
         )
