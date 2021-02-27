@@ -35,7 +35,7 @@ def base_prefix():
 @pytest.fixture
 def settings(base_prefix):
     return {
-        'bucket': 'that kerning',
+        'bucket': 'that_kerning',
         'prefix': base_prefix,
         'encrypt_uploads': False
     }

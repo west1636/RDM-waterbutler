@@ -463,8 +463,11 @@ class TestCRUD:
     @pytest.mark.aiohttpretty
     async def test_download_display_name(self, provider, mock_time):
         path = WaterButlerPath('/muhtriangle', prepend=provider.prefix)
-        url = provider.bucket.new_key(path.full_path).generate_url(100, response_headers={'response-content-disposition': "attachment; filename*=UTF-8''tuna"})
-        aiohttpretty.register_uri('GET', url[:url.index('?')], body=b'delicious', auto_length=True)
+        # url = provider.bucket.new_key(path.full_path).generate_url(100, response_headers={'response-content-disposition': "attachment; filename*=UTF-8''tuna"})
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
+        # aiohttpretty.register_uri('GET', url[:url.index('?')], body=b'delicious', auto_length=True)
+        aiohttpretty.register_uri('GET', url, body=b'delicious', auto_length=True)
 
         result = await provider.download(path, displayName='tuna')
         content = await result.read()
@@ -475,8 +478,11 @@ class TestCRUD:
     @pytest.mark.aiohttpretty
     async def test_download_not_found(self, provider, mock_time):
         path = WaterButlerPath('/muhtriangle', prepend=provider.prefix)
-        url = provider.bucket.new_key(path.full_path).generate_url(100, response_headers={'response-content-disposition': 'attachment'})
-        aiohttpretty.register_uri('GET', url[:url.index('?')], status=404)
+        # url = provider.bucket.new_key(path.full_path).generate_url(100, response_headers={'response-content-disposition': 'attachment'})
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
+        # aiohttpretty.register_uri('GET', url[:url.index('?')], status=404)
+        aiohttpretty.register_uri('GET', url, status=404)
 
         with pytest.raises(exceptions.DownloadError):
             await provider.download(path)
@@ -493,8 +499,11 @@ class TestCRUD:
     async def test_upload_update(self, provider, file_content, file_stream, file_metadata, mock_time):
         path = WaterButlerPath('/foobah', prepend=provider.prefix)
         content_md5 = hashlib.md5(file_content).hexdigest()
-        url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT')
-        metadata_url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        # url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT')
+        # metadata_url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=100, HttpMethod='PUT')
+        metadata_url = provider.connection.s3.meta.client.generate_presigned_url('head_object', Params=query_parameters, ExpiresIn=100, HttpMethod='HEAD')
         aiohttpretty.register_uri('HEAD', metadata_url, headers=file_metadata)
         aiohttpretty.register_uri('PUT', url, status=201, headers={'ETag': '"{}"'.format(content_md5)})
 
@@ -512,8 +521,11 @@ class TestCRUD:
         provider.encrypt_uploads = True
         path = WaterButlerPath('/foobah', prepend=provider.prefix)
         content_md5 = hashlib.md5(file_content).hexdigest()
-        url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT', encrypt_key=True)
-        metadata_url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        # url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT', encrypt_key=True)
+        # metadata_url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=100, HttpMethod='PUT')
+        metadata_url = provider.connection.s3.meta.client.generate_presigned_url('head_object', Params=query_parameters, ExpiresIn=100, HttpMethod='HEAD')
         aiohttpretty.register_uri(
             'HEAD',
             metadata_url,
@@ -536,7 +548,9 @@ class TestCRUD:
     @pytest.mark.aiohttpretty
     async def test_delete(self, provider, mock_time):
         path = WaterButlerPath('/some-file', prepend=provider.prefix)
-        url = provider.bucket.new_key(path.full_path).generate_url(100, 'DELETE')
+        # url = provider.bucket.new_key(path.full_path).generate_url(100, 'DELETE')
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=100, HttpMethod='DELETE')
         aiohttpretty.register_uri('DELETE', url, status=200)
 
         await provider.delete(path)
@@ -550,6 +564,7 @@ class TestCRUD:
 
         params = {'prefix': path.full_path.lstrip('/')}
         query_url = provider.bucket.generate_url(100, 'GET')
+
         aiohttpretty.register_uri(
             'GET',
             query_url,
@@ -564,10 +579,13 @@ class TestCRUD:
         if prefix is None:
             prefix = ''
         for i in target_items:
-            delete_url = provider.bucket.new_key(prefix + i).generate_url(
-                100,
-                'DELETE',
-            )
+            # delete_url = provider.bucket.new_key(prefix + i).generate_url(
+            #     100,
+            #     'DELETE',
+            # )
+            query_parameters = {'Bucket': provider.bucket.name, 'Key': prefix + i}
+            delete_url = provider.connection.s3.meta.client.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=100, HttpMethod='DELETE')
+
             delete_urls.append(delete_url)
             aiohttpretty.register_uri('DELETE', delete_url, status=204)
 
@@ -637,7 +655,9 @@ class TestMetadata:
     @pytest.mark.aiohttpretty
     async def test_metadata_file(self, provider, file_metadata, mock_time):
         path = WaterButlerPath('/Foo/Bar/my-image.jpg', prepend=provider.prefix)
-        url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        # url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('head_object', Params=query_parameters, ExpiresIn=100, HttpMethod='HEAD')
         aiohttpretty.register_uri('HEAD', url, headers=file_metadata)
 
         result = await provider.metadata(path)
@@ -651,7 +671,9 @@ class TestMetadata:
     @pytest.mark.aiohttpretty
     async def test_metadata_file_missing(self, provider, mock_time):
         path = WaterButlerPath('/notfound.txt', prepend=provider.prefix)
-        url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        # url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('delete_object', Params=query_parameters, ExpiresIn=100, HttpMethod='DELETE')
         aiohttpretty.register_uri('HEAD', url, status=404)
 
         with pytest.raises(exceptions.MetadataError):
@@ -662,8 +684,11 @@ class TestMetadata:
     async def test_upload(self, provider, file_content, file_stream, file_metadata, mock_time):
         path = WaterButlerPath('/foobah', prepend=provider.prefix)
         content_md5 = hashlib.md5(file_content).hexdigest()
-        url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT')
-        metadata_url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        # url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT')
+        # metadata_url = provider.bucket.new_key(path.full_path).generate_url(100, 'HEAD')
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=100, HttpMethod='PUT')
+        metadata_url = provider.connection.s3.meta.client.generate_presigned_url('head_object', Params=query_parameters, ExpiresIn=100, HttpMethod='HEAD')
         aiohttpretty.register_uri(
             'HEAD',
             metadata_url,
@@ -714,11 +739,15 @@ class TestCreateFolder:
     @pytest.mark.aiohttpretty
     async def test_errors_out(self, provider, mock_time):
         path = WaterButlerPath('/alreadyexists/')
-        url = provider.bucket.generate_url(100, 'GET')
-        params = build_folder_params(path)
-        create_url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT')
+        # url = provider.bucket.generate_url(100, 'GET')
+        # params = build_folder_params(path)
+        # create_url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT')
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
+        create_url = provider.connection.s3.meta.client.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=100, HttpMethod='PUT')
 
-        aiohttpretty.register_uri('GET', url, params=params, status=404)
+        # aiohttpretty.register_uri('GET', url, params=params, status=404)
+        aiohttpretty.register_uri('GET', url, status=404)
         aiohttpretty.register_uri('PUT', create_url, status=403)
 
         with pytest.raises(exceptions.CreateFolderError) as e:
@@ -730,8 +759,10 @@ class TestCreateFolder:
     @pytest.mark.aiohttpretty
     async def test_errors_out_metadata(self, provider, mock_time):
         path = WaterButlerPath('/alreadyexists/', prepend=provider.prefix)
-        url = provider.bucket.generate_url(100, 'GET')
-        params = build_folder_params(path)
+        # url = provider.bucket.generate_url(100, 'GET')
+        # params = build_folder_params(path)
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
 
         aiohttpretty.register_uri('GET', url, params=params, status=403)
 
@@ -744,11 +775,15 @@ class TestCreateFolder:
     @pytest.mark.aiohttpretty
     async def test_creates(self, provider, mock_time):
         path = WaterButlerPath('/doesntalreadyexists/', prepend=provider.prefix)
-        url = provider.bucket.generate_url(100, 'GET')
-        params = build_folder_params(path)
-        create_url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT')
+        # url = provider.bucket.generate_url(100, 'GET')
+        # params = build_folder_params(path)
+        # create_url = provider.bucket.new_key(path.full_path).generate_url(100, 'PUT')
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('get_object', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
+        create_url = provider.connection.s3.meta.client.generate_presigned_url('put_object', Params=query_parameters, ExpiresIn=100, HttpMethod='PUT')
 
-        aiohttpretty.register_uri('GET', url, params=params, status=404)
+        # aiohttpretty.register_uri('GET', url, params=params, status=404)
+        aiohttpretty.register_uri('GET', url, status=404)
         aiohttpretty.register_uri('PUT', create_url, status=200)
 
         resp = await provider.create_folder(path)
