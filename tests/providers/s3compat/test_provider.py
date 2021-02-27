@@ -562,13 +562,16 @@ class TestCRUD:
     async def test_folder_delete(self, provider, contents_and_self, mock_time):
         path = WaterButlerPath('/some-folder/', prepend=provider.prefix)
 
-        params = {'prefix': path.full_path.lstrip('/')}
-        query_url = provider.bucket.generate_url(100, 'GET')
+        # params = {'prefix': path.full_path.lstrip('/')}
+        # query_url = provider.bucket.generate_url(100, 'GET')
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
 
         aiohttpretty.register_uri(
             'GET',
-            query_url,
-            params=params,
+            url,
+            # query_url,
+            # params=params,
             body=contents_and_self,
             status=200,
         )
@@ -591,7 +594,7 @@ class TestCRUD:
 
         await provider.delete(path)
 
-        assert aiohttpretty.has_call(method='GET', uri=query_url, params=params)
+        # assert aiohttpretty.has_call(method='GET', uri=query_url, params=params)
         for delete_url in delete_urls:
             assert aiohttpretty.has_call(method='DELETE', uri=delete_url)
 
@@ -602,12 +605,14 @@ class TestMetadata:
     @pytest.mark.aiohttpretty
     async def test_metadata_folder(self, provider, folder_metadata, mock_time):
         path = WaterButlerPath('/darp/', prepend=provider.prefix)
-        url = provider.bucket.generate_url(100)
-        params = build_folder_params(path)
+        # url = provider.bucket.generate_url(100)
+        # params = build_folder_params(path)
+        # aiohttpretty.register_uri('GET', url, params=params, body=folder_metadata,
+        #                           headers={'Content-Type': 'application/xml'})
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url, params=params, body=folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
-
-        result = await provider.metadata(path)
 
         assert isinstance(result, list)
         assert len(result) == 3
@@ -619,8 +624,11 @@ class TestMetadata:
     @pytest.mark.aiohttpretty
     async def test_metadata_folder_self_listing(self, provider, contents_and_self, mock_time):
         path = WaterButlerPath('/thisfolder/', prepend=provider.prefix)
-        url = provider.bucket.generate_url(100)
-        params = build_folder_params(path)
+        # url = provider.bucket.generate_url(100)
+        # params = build_folder_params(path)
+        # aiohttpretty.register_uri('GET', url, params=params, body=contents_and_self)
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url, params=params, body=contents_and_self)
 
         result = await provider.metadata(path)
@@ -634,9 +642,13 @@ class TestMetadata:
     @pytest.mark.aiohttpretty
     async def test_just_a_folder_metadata_folder(self, provider, just_a_folder_metadata, mock_time):
         path = WaterButlerPath('/', prepend=provider.prefix)
-        url = provider.bucket.generate_url(100)
-        params = build_folder_params(path)
-        aiohttpretty.register_uri('GET', url, params=params, body=just_a_folder_metadata,
+        # url = provider.bucket.generate_url(100)
+        # params = build_folder_params(path)
+        # aiohttpretty.register_uri('GET', url, params=params, body=just_a_folder_metadata,
+        #                          headers={'Content-Type': 'application/xml'})
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
+        aiohttpretty.register_uri('GET', url, body=just_a_folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
         result = await provider.metadata(path)
@@ -713,9 +725,13 @@ class TestCreateFolder:
     @pytest.mark.aiohttpretty
     async def test_raise_409(self, provider, just_a_folder_metadata, mock_time):
         path = WaterButlerPath('/alreadyexists/', prepend=provider.prefix)
-        url = provider.bucket.generate_url(100, 'GET')
-        params = build_folder_params(path)
-        aiohttpretty.register_uri('GET', url, params=params, body=just_a_folder_metadata,
+        # url = provider.bucket.generate_url(100, 'GET')
+        # params = build_folder_params(path)
+        # aiohttpretty.register_uri('GET', url, params=params, body=just_a_folder_metadata,
+        #                           headers={'Content-Type': 'application/xml'})
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
+        aiohttpretty.register_uri('GET', url, body=just_a_folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
         with pytest.raises(exceptions.FolderNamingConflict) as e:
@@ -819,8 +835,11 @@ class TestOperations:
     @pytest.mark.aiohttpretty
     async def test_version_metadata(self, provider, version_metadata, mock_time):
         path = WaterButlerPath('/my-image.jpg')
-        url = provider.bucket.generate_url(100, 'GET', query_parameters={'versions': ''})
-        params = build_folder_params(path)
+        # url = provider.bucket.generate_url(100, 'GET', query_parameters={'versions': ''})
+        # params = build_folder_params(path)
+        # aiohttpretty.register_uri('GET', url, params=params, status=200, body=version_metadata)
+        query_parameters = {'Bucket': provider.bucket.name, 'Key': path.full_path}
+        url = provider.connection.s3.meta.client.generate_presigned_url('list_object_versions', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url, params=params, status=200, body=version_metadata)
 
         data = await provider.revisions(path)
