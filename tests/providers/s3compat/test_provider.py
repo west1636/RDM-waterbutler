@@ -56,7 +56,13 @@ def mock_time(monkeypatch):
 
 @pytest.fixture
 def provider(auth, credentials, settings):
-    return S3CompatProvider(auth, credentials, settings)
+    # return S3CompatProvider(auth, credentials, settings)
+    with mock_s3():
+        provider = return S3CompatProvider(auth, credentials, settings)
+        s3client = boto3.client('s3')
+        s3client.create_bucket(Bucket=provider.bucket.name)
+        # s3client.put_object(Bucket=provider.bucket.name, Key=full_path + '/')
+        return S3CompatProvider(auth, credentials, settings)
 
 
 @pytest.fixture
@@ -373,7 +379,6 @@ class TestValidatePath:
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
-    @mock_s3
     async def test_validate_v1_path_folder(self, provider, folder_metadata, mock_time):
         folder_path = 'Photos'
         full_path = folder_path
@@ -385,10 +390,6 @@ class TestValidatePath:
 
         # with pytest.raises(exceptions.NotFoundError) as exc:
         #     await provider.validate_v1_path('/' + folder_path + '/')
-
-        s3client = boto3.client('s3')
-        s3client.create_bucket(Bucket=provider.bucket.name)
-        s3client.put_object(Bucket=provider.bucket.name, Key=full_path + '/')
 
         # mock_key = mock.PropertyMock(return_value='Photos/')
         # mock_object = mock.MagicMock()
