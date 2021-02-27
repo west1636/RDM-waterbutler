@@ -33,7 +33,6 @@ class S3CompatFileMetadataHeaders(S3CompatMetadata, metadata.BaseFileMetadata):
     def path(self):
         return '/' + self.raw['Key'].lstrip('/')
 
-
     @property
     def size(self):
         return self.raw['CONTENT-LENGTH']
