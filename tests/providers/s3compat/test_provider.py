@@ -666,6 +666,9 @@ class TestMetadata:
             s3client = boto3.client('s3')
             s3client.create_bucket(Bucket=provider.bucket.name)
             s3client.put_object(Bucket=provider.bucket.name, Key=path.full_path)
+            s3client.put_object(Bucket=provider.bucket.name, Key='thisfolder/')
+            s3client.put_object(Bucket=provider.bucket.name, Key='thisfolder/item1')
+            s3client.put_object(Bucket=provider.bucket.name, Key='thisfolder/item2')
             result = await provider.metadata(path)
 
         assert isinstance(result, list)
