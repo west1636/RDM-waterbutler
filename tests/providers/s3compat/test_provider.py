@@ -384,7 +384,7 @@ class TestValidatePath:
 
         mock_object = mock.MagicMock()
         mock_object.cur_mock.execute.return_value = {}
-        provider.bucket.objects.filter = mock_object
+        provider.bucket.objects = mock_object
         wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
         # assert mock_object.assert_called_once_with(Prefix=full_path, Delimiter='/')
         # assert mock_object.assert_called()
@@ -598,7 +598,7 @@ class TestCRUD:
         mock_filter = mock.MagicMock()
         mock_filter.cur_mock.execute.return_value = mock_items
 
-        provider.bucket.objects.filter = mock_filter
+        provider.bucket.objects = mock_filter
 
         await provider.delete(path)
 
