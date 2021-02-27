@@ -119,13 +119,13 @@ class S3CompatProvider(provider.BaseProvider):
         if implicit_folder:
             objects = self.bucket.objects.filter(Prefix=wbpath.full_path, Delimiter='/')
             if len(list(objects)) == 0:
-                raise exceptions.NotFoundError(str(path.full_path))
+                raise exceptions.NotFoundError(str(wbpath.full_path))
 
         else:
             try:
                 self.bucket.Object(wbpath.full_path).metadata
             except ClientError:
-                raise exceptions.NotFoundError(str(path.full_path))
+                raise exceptions.NotFoundError(str(wbpath.full_path))
 
         return wbpath
 
