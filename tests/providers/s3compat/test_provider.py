@@ -62,7 +62,6 @@ def provider(auth, credentials, settings):
         provider = S3CompatProvider(auth, credentials, settings)
         s3client = boto3.client('s3')
         s3client.create_bucket(Bucket=provider.bucket.name)
-        # s3client.put_object(Bucket=provider.bucket.name, Key=full_path + '/')
         s3 = boto3.resource('s3')
         provider.connection.s3 = s3
         provider.bucket = s3.Bucket(provider.bucket.name)
@@ -391,6 +390,7 @@ class TestValidatePath:
             full_path = prefix + full_path
 
         params_for_dir = {'prefix': full_path + '/', 'delimiter': '/'}
+        provider.bucket.put_object(Key=full_path + '/', Body='')
 
         # with pytest.raises(exceptions.NotFoundError) as exc:
         #     await provider.validate_v1_path('/' + folder_path + '/')
