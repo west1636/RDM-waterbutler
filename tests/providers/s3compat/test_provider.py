@@ -595,7 +595,10 @@ class TestCRUD:
             mock_item.cur_mock.execute.return_value = i
             mock_items.append(mock_item)
 
-        provider.bucket.objects.filter = mock_items
+        mock_filter = mock.MagicMock()
+        mock_filter.cur_mock.execute.return_value = mock_items
+
+        provider.bucket.objects.filter = mock_filter
 
         await provider.delete(path)
 
