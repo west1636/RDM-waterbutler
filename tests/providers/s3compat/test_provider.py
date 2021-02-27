@@ -783,8 +783,12 @@ class TestCreateFolder:
         aiohttpretty.register_uri('GET', url, body=just_a_folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
-        with pytest.raises(exceptions.FolderNamingConflict) as e:
-            await provider.create_folder(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            with pytest.raises(exceptions.FolderNamingConflict) as e:
+                await provider.create_folder(path)
 
         assert e.value.code == 409
         assert e.value.message == 'Cannot create folder "alreadyexists", because a file or folder already exists with that name'
@@ -815,8 +819,12 @@ class TestCreateFolder:
         aiohttpretty.register_uri('GET', url, status=404)
         aiohttpretty.register_uri('PUT', create_url, status=403)
 
-        with pytest.raises(exceptions.CreateFolderError) as e:
-            await provider.create_folder(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            with pytest.raises(exceptions.CreateFolderError) as e:
+                await provider.create_folder(path)
 
         assert e.value.code == 403
 
@@ -832,8 +840,12 @@ class TestCreateFolder:
         # aiohttpretty.register_uri('GET', url, params=params, status=403)
         aiohttpretty.register_uri('GET', url, status=403)
 
-        with pytest.raises(exceptions.MetadataError) as e:
-            await provider.create_folder(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            with pytest.raises(exceptions.MetadataError) as e:
+                await provider.create_folder(path)
 
         assert e.value.code == 403
 
@@ -852,7 +864,11 @@ class TestCreateFolder:
         aiohttpretty.register_uri('GET', url, status=404)
         aiohttpretty.register_uri('PUT', create_url, status=200)
 
-        resp = await provider.create_folder(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            resp = await provider.create_folder(path)
 
         assert resp.kind == 'folder'
         assert resp.name == 'doesntalreadyexists'

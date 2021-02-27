@@ -315,14 +315,25 @@ class S3CompatProvider(provider.BaseProvider):
         :rtype list:
         """
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
-        try:
-            resp = self.connection.s3.meta.client.list_object_versions(Bucket=self.bucket.name, Prefix=prefix, Delimiter='/')
-        except ClientError as e:
+
+        query_params = {Bucket=self.bucket.name, Prefix=prefix, Delimiter='/'}
+        url = self.connection.generate_presigned_urlgenerate_presigned_url('list_object_versions', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='GET')
+        resp = await self.make_request(
+            'GET',
+            url,
+            expects=(200, ),
+            throws=exceptions.MetadataError,
+        )
+        except exceptions.MetadataError as e:
             # MinIO may not support "versions" from generate_url() of boto2.
             # (And, MinIO does not support ListObjectVersions yet.)
-            logger.info('ListObjectVersions may not be supported: {}'.format(str(e)))
+            logger.info('ListObjectVersions may not be supported: url={}: {}'.format(url(), str(e)))
             return []
-        versions = resp['Versions']
+
+        content = await resp.read()
+        xml = xmltodict.parse(content)
+        versions = xml['ListVersionsResult'].get('Version') or []
+
         if isinstance(versions, dict):
             versions = [versions]
 
