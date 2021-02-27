@@ -576,7 +576,7 @@ class TestCRUD:
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
     async def test_folder_delete(self, provider, contents_and_self, mock_time):
-        path = WaterButlerPath('/some-folder/', prepend=provider.prefix)
+        path = WaterButlerPath('/thisfolder/', prepend=provider.prefix)
 
         # params = {'prefix': path.full_path.lstrip('/')}
         # query_url = provider.bucket.generate_url(100, 'GET')
@@ -637,7 +637,12 @@ class TestMetadata:
         aiohttpretty.register_uri('GET', url, body=folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
-        result = await provider.metadata(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            s3client.put_object(Bucket=provider.bucket.name, Key=path.full_path)
+            result = await provider.metadata(path)
 
         assert isinstance(result, list)
         assert len(result) == 3
@@ -656,7 +661,12 @@ class TestMetadata:
         url = provider.connection.s3.meta.client.generate_presigned_url('list_objects', Params=query_parameters, ExpiresIn=100, HttpMethod='GET')
         aiohttpretty.register_uri('GET', url, body=contents_and_self)
 
-        result = await provider.metadata(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            s3client.put_object(Bucket=provider.bucket.name, Key=path.full_path)
+            result = await provider.metadata(path)
 
         assert isinstance(result, list)
         assert len(result) == 2
@@ -676,7 +686,12 @@ class TestMetadata:
         aiohttpretty.register_uri('GET', url, body=just_a_folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
-        result = await provider.metadata(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            s3client.put_object(Bucket=provider.bucket.name, Key=path.full_path)
+            result = await provider.metadata(path)
 
         assert isinstance(result, list)
         assert len(result) == 1
@@ -697,7 +712,12 @@ class TestMetadata:
         url = provider.connection.s3.meta.client.generate_presigned_url('head_object', Params=query_parameters, ExpiresIn=100, HttpMethod='HEAD')
         aiohttpretty.register_uri('HEAD', url, headers=file_metadata)
 
-        result = await provider.metadata(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            s3client.put_object(Bucket=provider.bucket.name, Key=path.full_path)
+            result = await provider.metadata(path)
 
         assert isinstance(result, metadata.BaseFileMetadata)
         assert result.path == '/' + path.path
@@ -713,8 +733,12 @@ class TestMetadata:
         url = provider.connection.s3.meta.client.generate_presigned_url('head_object', Params=query_parameters, ExpiresIn=100, HttpMethod='HEAD')
         aiohttpretty.register_uri('HEAD', url, status=404)
 
-        with pytest.raises(exceptions.MetadataError):
-            await provider.metadata(path)
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            with pytest.raises(exceptions.MetadataError):
+                await provider.metadata(path)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
