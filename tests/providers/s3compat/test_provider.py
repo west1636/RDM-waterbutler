@@ -389,10 +389,11 @@ class TestValidatePath:
         mock_bucket = mock.MagicMock(return_value=mock_objects)
         # provider.bucket = mock_bucket
 
-        mock.patch('boto3.resources.collection.ResourceCollection.filter',
-            return_value=mock_filter)
+        with mock.patch('boto3.resources.collection.ResourceCollection.filter',
+            return_value=mock_filter):
+            wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
 
-        wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
+        # wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
         # assert mock_filter.assert_called_once_with(Prefix=full_path, Delimiter='/')
         assert mock_object.key.assert_called()
 
