@@ -357,8 +357,9 @@ class TestValidatePath:
         # with pytest.raises(exceptions.NotFoundError) as exc:
         #     await provider.validate_v1_path('/' + file_path)
 
-        mock_object = mock.MagicMock(return_value={})
-        provider.bucket.Object = mock_object
+        mock_object = mock.MagicMock()
+        mock_object.metadata.execute.return_value = {}
+        provider.bucket.Object = mock.MagicMock(return_value=mock_object)
         wb_path_v1 = await provider.validate_v1_path('/' + file_path)
         # assert mock_object.assert_called_once_with(full_path)
         # assert mock_object.assert_called()
