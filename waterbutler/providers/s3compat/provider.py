@@ -369,7 +369,7 @@ class S3CompatProvider(provider.BaseProvider):
             throws=exceptions.MetadataError,
         )
         await resp.release()
-        return S3CompatFileMetadataHeaders(self, path.full_path, resp)
+        return S3CompatFileMetadataHeaders(self, path.full_path, resp.headers)
 
     async def _metadata_folder(self, path):
         logger.info('_metadata_folder: {}:'.format(path.full_path))
