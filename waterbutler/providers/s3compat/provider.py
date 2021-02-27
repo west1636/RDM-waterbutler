@@ -316,14 +316,15 @@ class S3CompatProvider(provider.BaseProvider):
         """
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
 
-        query_params = {'Bucket':self.bucket.name, 'Prefix':prefix, 'Delimiter':'/'}
+        query_params = {'Bucket': self.bucket.name, 'Prefix': prefix, 'Delimiter': '/'}
         url = self.connection.generate_presigned_urlgenerate_presigned_url('list_object_versions', Params=query_parameters, ExpiresIn=settings.TEMP_URL_SECS, HttpMethod='GET')
-        resp = await self.make_request(
-            'GET',
-            url,
-            expects=(200, ),
-            throws=exceptions.MetadataError,
-        )
+        try:
+            resp = await self.make_request(
+                'GET',
+                url,
+                expects=(200, ),
+                throws=exceptions.MetadataError,
+            )
         except exceptions.MetadataError as e:
             # MinIO may not support "versions" from generate_url() of boto2.
             # (And, MinIO does not support ListObjectVersions yet.)
