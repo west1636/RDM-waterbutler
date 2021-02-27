@@ -384,13 +384,13 @@ class TestValidatePath:
 
         mock_object = mock.MagicMock()
         mock_object.key.execute.return_value = 'Photos/'
-        mock_filter = mock.MagicMock(return_value=[mock_object])
-        mock_objects = mock.MagicMock(return_value=mock_filter)
-        mock_bucket = mock.MagicMock(return_value=mock_objects)
+        # mock_filter = mock.MagicMock(return_value=[mock_object])
+        # mock_objects = mock.MagicMock(return_value=mock_filter)
+        # mock_bucket = mock.MagicMock(return_value=mock_objects)
         # provider.bucket = mock_bucket
 
         with mock.patch('boto3.resources.collection.ResourceCollection.filter',
-            return_value=mock_filter):
+            return_value=[mock_object]) as mock_filter:
             wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
 
         # wb_path_v1 = await provider.validate_v1_path('/' + folder_path + '/')
