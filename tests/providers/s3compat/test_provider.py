@@ -389,8 +389,12 @@ class TestValidatePath:
         if prefix:
             full_path = prefix + full_path
 
-        with pytest.raises(exceptions.NotFoundError) as exc:
-            await provider.validate_v1_path('/' + folder_path + '/')
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            with pytest.raises(exceptions.NotFoundError) as exc:
+                await provider.validate_v1_path('/' + folder_path + '/')
 
         with mock_s3():
             boto3.DEFAULT_SESSION = None
