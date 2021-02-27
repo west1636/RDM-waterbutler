@@ -369,13 +369,18 @@ class TestValidatePath:
         with pytest.raises(exceptions.NotFoundError) as exc:
              await provider.validate_v1_path('/' + file_path)
 
-        boto3.DEFAULT_SESSION = None
-        provider.bucket.put_object(Key=full_path, Body='')
+        with mock_s3():
+            boto3.DEFAULT_SESSION = None
+            s3client = boto3.client('s3')
+            s3client.create_bucket(Bucket=provider.bucket.name)
+            s3client.put_object(Bucket=provider.bucket.name, Key=full_path)
+            wb_path_v1 = await provider.validate_v1_path('/' + file_path)
+        # provider.bucket.put_object(Key=full_path, Body='')
 
         # mock_object = mock.MagicMock()
         # mock_object.metadata.execute.return_value = {}
         # provider.bucket.Object = mock.MagicMock(return_value=mock_object)
-        #wb_path_v1 = await provider.validate_v1_path('/' + file_path)
+        # wb_path_v1 = await provider.validate_v1_path('/' + file_path)
         # assert mock_object.assert_called_once_with(full_path)
         # assert mock_object.assert_called()
 
