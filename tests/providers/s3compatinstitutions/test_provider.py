@@ -46,8 +46,8 @@ def settings(base_prefix):
 @pytest.fixture
 def provider(auth, credentials, settings):
     # return S3CompatInstitutionsProvider(auth, credentials, settings)
+    boto3.DEFAULT_SESSION = None
     with mock_s3():
-        boto3.DEFAULT_SESSION = None
         provider = S3CompatInstitutionsProvider(auth, credentials, settings)
         s3client = boto3.client('s3')
         s3client.create_bucket(Bucket=provider.bucket.name)

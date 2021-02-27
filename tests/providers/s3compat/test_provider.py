@@ -57,8 +57,8 @@ def mock_time(monkeypatch):
 @pytest.fixture
 def provider(auth, credentials, settings):
     # return S3CompatProvider(auth, credentials, settings)
+    boto3.DEFAULT_SESSION = None
     with mock_s3():
-        boto3.DEFAULT_SESSION = None
         provider = S3CompatProvider(auth, credentials, settings)
         s3client = boto3.client('s3')
         s3client.create_bucket(Bucket=provider.bucket.name)
@@ -370,8 +370,6 @@ class TestValidatePath:
             boto3.DEFAULT_SESSION = None
             s3client = boto3.client('s3')
             s3client.create_bucket(Bucket=provider.bucket.name)
-            s3 = boto3.resource('s3')
-            provider.bucket = s3.Bucket(provider.bucket.name)
             with pytest.raises(exceptions.NotFoundError) as exc:
                  await provider.validate_v1_path('/' + file_path)
 
@@ -380,8 +378,6 @@ class TestValidatePath:
             s3client = boto3.client('s3')
             s3client.create_bucket(Bucket=provider.bucket.name)
             s3client.put_object(Bucket=provider.bucket.name, Key=full_path)
-            s3 = boto3.resource('s3')
-            provider.bucket = s3.Bucket(provider.bucket.name)
             wb_path_v1 = await provider.validate_v1_path('/' + file_path)
 
         wb_path_v0 = await provider.validate_path('/' + file_path)
