@@ -68,6 +68,7 @@ setup(
             'dropboxbusiness = waterbutler.providers.dropboxbusiness:DropboxBusinessProvider',
             'nextcloudinstitutions = waterbutler.providers.nextcloudinstitutions:NextcloudInstitutionsProvider',
             's3compatinstitutions = waterbutler.providers.s3compatinstitutions:S3CompatInstitutionsProvider',
+            'ociinstitutions = waterbutler.providers.ociinstitutions:OCIInstitutionsProvider',
         ],
     },
 )
