@@ -1,0 +1,2 @@
+class IntegromatProvider:
+    NAME = 'integromat'
