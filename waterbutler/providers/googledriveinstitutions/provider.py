@@ -146,7 +146,11 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         async with self.request(
             'PATCH',
             self.build_url('files', src_path.identifier),
-            params={'addParents': dest_path.parent.identifier, 'removeParents': src_path.parent.identifier, 'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit)'},
+            params={
+                'addParents': dest_path.parent.identifier,
+                'removeParents': src_path.parent.identifier,
+                'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'
+            },
             headers={
                 'Content-Type': 'application/json'
             },
@@ -179,10 +183,12 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         async with self.request(
             'POST',
             self.build_url('files', src_path.identifier, 'copy'),
-            params={'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit)'},
+            params={'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'},
             headers={'Content-Type': 'application/json'},
             data=json.dumps({
-                'parents': [dest_path.parent.identifier],
+                'parents': [
+                    dest_path.parent.identifier
+                ],
                 'name': dest_path.name
             }),
             expects=(200, ),
@@ -218,10 +224,23 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
 
         metadata = await self.metadata(path, revision=revision)
 
+        valid_revision = revision and not revision.endswith(pd_settings.DRIVE_IGNORE_VERSION)
+        ext = utils.get_extension(metadata.raw)
+        params = {}
+        if ext in ('.gdoc', '.gdraw', '.gslides', '.gsheet'):
+            url = utils.get_export_link(metadata.raw)
+        else:
+            if valid_revision:
+                url = self.build_url('files', path.identifier, 'revisions', revision)
+                params = {'alt': 'media'}
+            else:
+                url = self.build_url('files', path.identifier)
+                params = {'alt': 'media'}
+
         download_resp = await self.make_request(
             'GET',
-            self.build_url('files', path.identifier) or utils.get_export_link(metadata.raw),
-            params={'alt': 'media'},
+            url,
+            params=params,
             range=range,
             expects=(200, 206),
             throws=exceptions.DownloadError,
@@ -351,6 +370,9 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         async with self.request(
             'GET',
             self.build_url('files', path.identifier, 'revisions'),
+            params={
+                'fields': 'revisions(id,mimeType,modifiedTime,exportLinks,originalFilename,md5Checksum,size)'
+            },
             expects=(200, 403, ),
             throws=exceptions.RevisionsError,
         ) as resp:
@@ -384,12 +406,17 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         async with self.request(
             'POST',
             self.build_url('files'),
+            params={
+                'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'
+            },
             headers={
                 'Content-Type': 'application/json',
             },
             data=json.dumps({
                 'name': path.name,
-                'parents': [path.parent.identifier],
+                'parents': [
+                    path.parent.identifier
+                ],
                 'mimeType': self.FOLDER_MIME_TYPE,
             }),
             expects=(200, ),
@@ -404,19 +431,21 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
     def _build_upload_url(self, *segments, **query):
         return provider.build_url(pd_settings.BASE_UPLOAD_URL, *segments, **query)
 
-    def _serialize_revisions(self,
+    def _serialize_item(self,
                         path: WaterButlerPath,
-                        revisions: dict,
+                        item: dict,
                         raw: bool=False) -> Union[BaseGoogleDriveInstitutionsMetadata, dict]:
         if raw:
-            return revisions
-        if revisions['mimeType'] == self.FOLDER_MIME_TYPE:
-            return GoogleDriveInstitutionsFolderMetadata(revisions, path)
-        return GoogleDriveInstitutionsFileMetadata(revisions, path)
+            return item
+        if item['mimeType'] == self.FOLDER_MIME_TYPE:
+            return GoogleDriveInstitutionsFolderMetadata(item, path)
+        return GoogleDriveInstitutionsFileMetadata(item, path)
 
     def _build_upload_metadata(self, folder_id: str, name: str) -> dict:
         return {
-            'parents': [folder_id],
+            'parents': [
+                folder_id
+            ],
             'name': name,
         }
 
@@ -428,7 +457,10 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         async with self.request(
             'POST' if created else 'PUT',
             self._build_upload_url('files', *segments),
-            params={'uploadType': 'resumable', 'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit)'},
+            params={
+                'uploadType': 'resumable',
+                'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'
+            },
             headers={
                 'Content-Type': 'application/json; charset=UTF-8',
                 'X-Upload-Content-Length': str(size),
@@ -444,7 +476,11 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         async with self.request(
             'PUT',
             self._build_upload_url('files', *segments),
-            params={'uploadType': 'resumable', 'upload_id': upload_id, 'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit)'},
+            params={
+                'uploadType': 'resumable',
+                'upload_id': upload_id,
+                'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'
+            },
             headers={'Content-Length': str(stream.size)},
             data=stream,
             expects=(200, ),
@@ -499,7 +535,10 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             async with self.request(
                 'GET',
                 self.build_url('files'),
-                params={'q': query, 'fields': 'files(id)'},
+                params={
+                    'q': query,
+                    'fields': 'files(id)'
+                },
                 expects=(200, ),
                 throws=exceptions.MetadataError,
             ) as resp:
@@ -521,7 +560,9 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             async with self.request(
                 'GET',
                 self.build_url('files', file_id),
-                params={'fields': 'id,name,mimeType'},
+                params={
+                    'fields': 'id,name,mimeType'
+                },
                 expects=(200, ),
                 throws=exceptions.MetadataError,
             ) as resp:
@@ -542,7 +583,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         will error.
 
         :param GoogleDrivePath path: the path of the google doc to get version information for
-        :param dict item: a raw response object from the GDrive file metadata endpoint
+        :param dict revisions: a raw response object from the GDrive file metadata endpoint
         :param bool raw: should we return the raw response object from the GDrive API?
         :rtype: GoogleDriveFileMetadata
         :rtype: dict
@@ -551,7 +592,9 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         async with self.request(
             'GET',
             self.build_url('files', revisions['id'], 'revisions'),
-            params={'fields': 'revisions'},
+            params={
+                'fields': 'revisions(id,mimeType,modifiedTime,exportLinks,originalFilename,md5Checksum,size)'
+            },
             expects=(200, ),
             throws=exceptions.RevisionsError,
         ) as resp:
@@ -564,17 +607,22 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         if has_revisions:
             revisions['version'] = revisions_data['revisions'][-1]['id']
         else:
-            # If there are no revisions use modifiedDate as vid
-            revisions['version'] = revisions['modifiedDate'] + pd_settings.DRIVE_IGNORE_VERSION
+            # If there are no revisions use modifiedTime as vid
+            revisions['version'] = revisions['modifiedTime'] + pd_settings.DRIVE_IGNORE_VERSION
 
-        return self._serialize_revisions(path, revisions, raw=raw)
+        return self._serialize_item(path, revisions, raw=raw)
 
     async def _folder_metadata(self,
                                path: WaterButlerPath,
                                raw: bool=False) -> List[Union[BaseGoogleDriveInstitutionsMetadata, dict]]:
         query = self._build_query(path.identifier)
         built_url = self.build_url('files')
-        params = {'q': query, 'alt': 'json', 'pageSize': 1000, 'fields': 'nextPageToken,files(id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit))'}
+        params = {
+            'q': query,
+            'alt': 'json',
+            'pageSize': '1000',
+            'fields': 'nextPageToken,files(id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit))'
+        }
         full_resp = []
         while built_url:
             async with self.request(
@@ -586,12 +634,18 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             ) as resp:
                 resp_json = await resp.json()
                 full_resp.extend([
-                    self._serialize_revisions(path.child(item['name']), item, raw=raw)
+                    self._serialize_item(path.child(item['name']), item, raw=raw)
                     for item in resp_json['files']
                 ])
                 nextPageToken = resp_json.get('nextPageToken')
                 if nextPageToken:
-                    params = {'q': query, 'alt': 'json', 'pageSize': 1000, 'pageToken': nextPageToken, 'fields': 'nextPageToken,files(id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,capabilities(canEdit))'}
+                    params = {
+                        'q': query,
+                        'alt': 'json',
+                        'pageSize': '1000',
+                        'pageToken': nextPageToken,
+                        'fields': 'nextPageToken,files(id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit))'
+                    }
                 else:
                     built_url = None
         return full_resp
@@ -638,10 +692,14 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
 
         if revision and valid_revision:
             url = self.build_url('files', path.identifier, 'revisions', revision)
-            params = {'fields': 'id,mimeType,modifiedTime,md5Checksum,size,exportLinks'}
+            params = {
+                'fields': 'id,mimeType,modifiedTime,exportLinks,originalFilename,md5Checksum,size'
+            }
         else:
             url = self.build_url('files', path.identifier)
-            params = {'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,md5Checksum,originalFilename,exportLinks,ownedByMe,capabilities(canEdit)'}
+            params = {
+                'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'
+            }
 
         async with self.request(
             'GET',
@@ -688,7 +746,10 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         resp = await self.make_request(
             'GET',
             self.build_url('files'),
-            params={'q': "'{}' in parents".format(file_id), 'fields': 'files(id)'},
+            params={
+                'q': "'{}' in parents".format(file_id),
+                'fields': 'files(id)'
+            },
             expects=(200, ),
             throws=exceptions.MetadataError)
 
