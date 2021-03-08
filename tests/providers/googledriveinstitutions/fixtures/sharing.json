@@ -1,0 +1,191 @@
+{
+    "canEdit_gdoc": {
+        "metadata": {
+            "kind" : "drive#file",
+            "id" : "1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ",
+            "name" : "canEdit_gdoc",
+            "mimeType" : "application/vnd.google-apps.document",
+            "trashed" : false,
+            "parents" : [
+                "0B74RCNS4TbRVNGJwLWFacnlKdGM"
+            ],
+            "version" : "43684",
+            "webViewLink" : "https://docs.google.com/a/cos.io/document/d/1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ/edit?usp=drivesdk",
+            "createdTime" : "2017-02-24T18:36:58.044Z",
+            "modifiedTime" : "2017-02-24T18:37:28.569Z",
+            "ownedByMe": true,
+            "capabilities" : {
+                "canEdit" : true
+            },
+            "exportLinks" : {
+                "application/vnd.oasis.opendocument.text" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&exportFormat=odt",
+                "application/zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&exportFormat=zip",
+                "text/html" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&exportFormat=html",
+                "application/pdf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&exportFormat=pdf",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&exportFormat=docx",
+                "text/plain" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&exportFormat=txt",
+                "application/rtf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&exportFormat=rtf",
+                "application/epub+zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&exportFormat=epub"
+            }
+        },
+        "revisions":  {
+            "kind" : "drive#revisionList",
+            "revisions" : [
+                {
+                    "kind" : "drive#revision",
+                    "id" : "1",
+                    "mimeType" : "application/vnd.google-apps.document",
+                    "modifiedTime" : "2017-02-24T18:36:58.041Z",
+                    "exportLinks" : {
+                        "application/rtf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=rtf",
+                        "application/epub+zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=epub",
+                        "application/zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=zip",
+                        "application/pdf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=pdf",
+                        "text/plain" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=txt",
+                        "application/vnd.oasis.opendocument.text" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=odt",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=docx",
+                        "text/html" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=html"
+                    }
+                },
+                {
+                    "kind" : "drive#revision",
+                    "id" : "11",
+                    "mimeType" : "application/vnd.google-apps.document",
+                    "modifiedTime" : "2017-02-24T18:37:28.552Z",
+                    "exportLinks" : {
+                        "application/vnd.oasis.opendocument.text" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=11&exportFormat=odt",
+                        "text/html" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=11&exportFormat=html",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=11&exportFormat=docx",
+                        "application/pdf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=11&exportFormat=pdf",
+                        "text/plain" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=11&exportFormat=txt",
+                        "application/zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=11&exportFormat=zip",
+                        "application/epub+zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=11&exportFormat=epub",
+                        "application/rtf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=11&exportFormat=rtf"
+                    }
+                }
+            ]
+        },
+        "revision": {
+            "kind" : "drive#revision",
+            "id" : "1",
+            "mimeType" : "application/vnd.google-apps.document",
+            "modifiedTime" : "2017-02-24T18:36:58.041Z",
+            "exportLinks" : {
+                "application/pdf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=pdf",
+                "text/plain" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=txt",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=docx",
+                "application/epub+zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=epub",
+                "application/rtf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=rtf",
+                "application/vnd.oasis.opendocument.text" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=odt",
+                "text/html" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=html",
+                "application/zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1XeE-iK-SolhmYntE5gq9fVT_icHrJ2hTIEISZ6t4COQ&revision=1&exportFormat=zip"
+            }
+        }
+    },
+    "viewable_gdoc": {
+        "metadata": {
+            "kind" : "drive#file",
+            "id" : "1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8",
+            "name" : "viewable_gdoc",
+            "mimeType" : "application/vnd.google-apps.document",
+            "trashed" : false,
+            "parents" : [
+                "0B74RCNS4TbRVNGJwLWFacnlKdGM"
+            ],
+            "version" : "58109",
+            "webViewLink" : "https://docs.google.com/a/cos.io/document/d/1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8/edit?usp=drivesdk",
+            "createdTime" : "2017-05-15T17:45:45.246Z",
+            "modifiedTime" : "2017-05-15T17:46:05.629Z",
+            "ownedByMe": false,
+            "capabilities" : {
+                "canEdit" : false
+            },
+            "exportLinks" : {
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "https://docs.google.com/feeds/download/documents/export/Export?id=1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8&exportFormat=docx",
+                "text/html" : "https://docs.google.com/feeds/download/documents/export/Export?id=1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8&exportFormat=html",
+                "application/pdf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8&exportFormat=pdf",
+                "application/zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8&exportFormat=zip",
+                "application/vnd.oasis.opendocument.text" : "https://docs.google.com/feeds/download/documents/export/Export?id=1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8&exportFormat=odt",
+                "application/rtf" : "https://docs.google.com/feeds/download/documents/export/Export?id=1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8&exportFormat=rtf",
+                "application/epub+zip" : "https://docs.google.com/feeds/download/documents/export/Export?id=1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8&exportFormat=epub",
+                "text/plain" : "https://docs.google.com/feeds/download/documents/export/Export?id=1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8&exportFormat=txt"
+            }
+        },
+        "revisions_error": {
+            "error": {
+                "errors": [
+                    {
+                        "reason": "userAccess",
+                        "locationType": "header",
+                        "message": "The authenticated user does not have the required access to the file 1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8",
+                        "location": "Authorization",
+                        "domain": "global"
+                    }
+                ],
+                "message": "The authenticated user does not have the required access to the file 1k05-O-4a79X4ysubQSxHow6ZhgVVEE1oM-f3hXAWvj8",
+                "code": 403
+            }
+        }
+    },
+    "commentable_gdoc": {
+        "metadata": {}
+    },
+    "canEdit_jpeg": {
+        "metadata": {
+            "kind" : "drive#file",
+            "id" : "0B74RCNS4TbRVTGs4OTNock9ma0k",
+            "name" : "canEdit_jpeg.jpeg",
+            "mimeType" : "application/octet-stream",
+            "trashed" : false,
+            "parents" : [
+                "0B74RCNS4TbRVNGJwLWFacnlKdGM"
+            ],
+            "version" : "48259",
+            "webViewLink" : "https://drive.google.com/a/cos.io/file/d/0B74RCNS4TbRVTGs4OTNock9ma0k/view?usp=drivesdk",
+            "createdTime" : "2017-03-13T16:22:39.007Z",
+            "modifiedTime" : "2017-05-15T20:01:21.364Z",
+            "ownedByMe": true,
+            "capabilities" : {
+                "canEdit" : true
+            },
+            "originalFilename" : "canEdit_jpeg.jpeg",
+            "md5Checksum" : "b7705327bf8ca279454028343d45f3ce",
+            "size" : "24"
+        },
+        "revision": {
+            "kind" : "drive#revision",
+            "id" : "0B74RCNS4TbRVTitFais4VzVmQlQ4S0docGlhelk5MXE3OFJnPQ",
+            "mimeType" : "application/octet-stream",
+            "modifiedTime" : "2017-05-15T20:00:30.278Z",
+            "originalFilename" : "woof",
+            "md5Checksum" : "b7705327bf8ca279454028343d45f3ce",
+            "size" : "24"
+        }
+    },
+    "viewable_jpeg": {
+        "metadata": {
+            "kind" : "drive#file",
+            "id" : "0B5RhExds5_WHYnp6Um9fOGpwVVU",
+            "name" : "viewable_jpeg.jpeg",
+            "mimeType" : "text/plain",
+            "trashed" : false,
+            "parents" : [
+                "0B74RCNS4TbRVNGJwLWFacnlKdGM"
+            ],
+            "version" : "58119",
+            "webViewLink" : "https://drive.google.com/a/cos.io/file/d/0B5RhExds5_WHYnp6Um9fOGpwVVU/view?usp=drivesdk",
+            "createdTime" : "2017-05-15T17:50:23.253Z",
+            "modifiedTime" : "2017-05-15T17:50:43.571Z",
+            "ownedByMe": false,
+            "capabilities" : {
+                "canEdit" : false
+            },
+            "originalFilename" : "viewable_jpeg.jpeg",
+            "md5Checksum" : "8219a2180f96d8e85092a4fea17445d4",
+            "size" : "30"
+        }
+    },
+    "commentable_jpeg": {
+        "metadata": {}
+    }
+}
