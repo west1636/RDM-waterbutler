@@ -272,10 +272,10 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
 
         stream.add_writer('md5', streams.HashStreamWriter(hashlib.md5))
 
-        upload_metadata = self._build_upload_metadata(path.parent.identifier, path.name)
-        location = await self._start_resumable_upload(not path.identifier, segments, stream.size,
+        upload_metadata = self._build_upload_metadata(not path.identifier, path.parent.identifier, path.name)
+        upload_id = await self._start_resumable_upload(not path.identifier, segments, stream.size,
                                                        upload_metadata)
-        data = await self._finish_resumable_upload(segments, stream, location)
+        data = await self._finish_resumable_upload(segments, stream, upload_id)
 
         if data['md5Checksum'] != stream.writers['md5'].hexdigest:
             raise exceptions.UploadChecksumMismatchError()
@@ -441,13 +441,18 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             return GoogleDriveInstitutionsFolderMetadata(item, path)
         return GoogleDriveInstitutionsFileMetadata(item, path)
 
-    def _build_upload_metadata(self, folder_id: str, name: str) -> dict:
-        return {
-            'parents': [
-                folder_id
-            ],
-            'name': name,
-        }
+    def _build_upload_metadata(self, created: bool, folder_id: str, name: str) -> dict:
+        if created:
+            return {
+                'parents': [
+                    folder_id
+                ],
+                'name': name,
+            }
+        else:
+            return {
+                'name': name,
+            }
 
     async def _start_resumable_upload(self,
                                       created: bool,
@@ -455,7 +460,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
                                       size,
                                       metadata: dict) -> str:
         async with self.request(
-            'POST' if created else 'PUT',
+            'POST' if created else 'PATCH',
             self._build_upload_url('files', *segments),
             params={
                 'uploadType': 'resumable',
@@ -578,8 +583,8 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         we should probably remove it to simplify this method.
 
         This method does not handle the case of read-only google docs, which will return a 403.
-        Other methods should check the ``userPermission.role`` field of the file metadata before
-        calling this.  If the value of that field is ``"reader"`` or ``"commenter"``, this method
+        Other methods should check the ``ownedByMe`` and ``capabilities.canEdit`` field of the file metadata before
+        calling this.  If the value of that field is ``false``, this method
         will error.
 
         :param GoogleDrivePath path: the path of the google doc to get version information for

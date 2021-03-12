@@ -447,7 +447,7 @@ class TestUpload:
                                           'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
 
         aiohttpretty.register_json_uri('PUT', url, params=finish_upload_params, body=item)
-        aiohttpretty.register_uri('PUT', url, params=start_upload_params,
+        aiohttpretty.register_uri('PATCH', url, params=start_upload_params,
                                   headers={'LOCATION': 'http://waterbutler.io?upload_id={}'.format(upload_id)})
 
         result, created = await provider.upload(file_stream, path)
@@ -456,7 +456,7 @@ class TestUpload:
 
         assert created is False
         assert result == expected
-        assert aiohttpretty.has_call(method='PUT', uri=url, params=start_upload_params)
+        assert aiohttpretty.has_call(method='PATCH', uri=url, params=start_upload_params)
         assert aiohttpretty.has_call(method='PUT', uri=url, params=finish_upload_params)
 
 
