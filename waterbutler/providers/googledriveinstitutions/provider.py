@@ -73,8 +73,8 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
     BASE_URL = pd_settings.BASE_URL
     FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder'
 
-    def __init__(self, auth: dict, credentials: dict, settings: dict) -> None:
-        super().__init__(auth, credentials, settings)
+    def __init__(self, auth: dict, credentials: dict, settings: dict, **kwargs) -> None:
+        super().__init__(auth, credentials, settings, **kwargs)
         self.token = self.credentials['token']
         self.folder = self.settings['folder']
 
