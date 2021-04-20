@@ -25,6 +25,7 @@ class TestMetadata:
 
     def test_file_metadata_drive(self, basepath, root_provider_fixtures):
         item = root_provider_fixtures['list_file']['files'][0]
+        item['sha512'] = 'a098c4ef26ff804644b7c7d0b8ef23650edbf10870dfde5b16b46a5f30bf7a24ee0706c3eb9ed53ccfe6d0e00b1388e43988a335a4a47351f22e5e90df50108f'
         path = basepath.child(item['name'])
         parsed = GoogleDriveInstitutionsFileMetadata(item, path)
 
@@ -40,7 +41,7 @@ class TestMetadata:
         assert parsed.extra == {
             'revisionId': item['version'],
             'webView': item['webViewLink'],
-            'hashes': {'md5': item['md5Checksum']},
+            'hashes': {'sha512': item['sha512']},
         }
         assert parsed.path == '/' + os.path.join(*[x.raw for x in path.parts])
         assert parsed.materialized_path == str(path)
@@ -49,6 +50,7 @@ class TestMetadata:
 
     def test_file_metadata_drive_slashes(self, basepath, root_provider_fixtures):
         item = root_provider_fixtures['file_forward_slash']
+        item['sha512'] = 'a098c4ef26ff804644b7c7d0b8ef23650edbf10870dfde5b16b46a5f30bf7a24ee0706c3eb9ed53ccfe6d0e00b1388e43988a335a4a47351f22e5e90df50108f'
         path = basepath.child(item['name'])
         parsed = GoogleDriveInstitutionsFileMetadata(item, path)
 
@@ -64,7 +66,7 @@ class TestMetadata:
         assert parsed.extra == {
             'revisionId': item['version'],
             'webView': item['webViewLink'],
-            'hashes': {'md5': item['md5Checksum']},
+            'hashes': {'sha512': item['sha512']},
         }
         assert parsed.path == '/' + os.path.join(*[x.raw for x in path.parts])
         assert parsed.materialized_path == str(path)
@@ -73,6 +75,7 @@ class TestMetadata:
 
     def test_file_metadata_docs(self, basepath, root_provider_fixtures):
         item = root_provider_fixtures['docs_file_metadata']
+        item['sha512'] = 'a098c4ef26ff804644b7c7d0b8ef23650edbf10870dfde5b16b46a5f30bf7a24ee0706c3eb9ed53ccfe6d0e00b1388e43988a335a4a47351f22e5e90df50108f'
         path = basepath.child(item['name'])
         parsed = GoogleDriveInstitutionsFileMetadata(item, path)
 
@@ -81,6 +84,7 @@ class TestMetadata:
             'revisionId': item['version'],
             'downloadExt': '.docx',
             'webView': item['webViewLink'],
+            'hashes': {'sha512': item['sha512']},
         }
         assert parsed.is_google_doc is True
         assert parsed.export_name == item['name'] + '.docx'

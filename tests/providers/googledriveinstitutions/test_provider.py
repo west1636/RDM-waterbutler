@@ -4,6 +4,7 @@ import copy
 import json
 from http import client
 from urllib import parse
+import hashlib
 
 import pytest
 import aiohttpretty
@@ -392,8 +393,10 @@ class TestUpload:
         aiohttpretty.register_uri('POST', url, params=start_upload_params,
                                   headers={'LOCATION': 'http://waterbutler.io?upload_id={}'.format(upload_id)})
 
+        file_stream.add_writer('sha512', streams.HashStreamWriter(hashlib.sha512))
         result, created = await provider.upload(file_stream, path)
 
+        item['sha512'] = file_stream.writers['sha512'].hexdigest
         expected = GoogleDriveInstitutionsFileMetadata(item, path)
 
         assert created is True
@@ -421,8 +424,10 @@ class TestUpload:
         aiohttpretty.register_uri('POST', url, params=start_upload_params,
                                   headers={'LOCATION': 'http://waterbutler.io?upload_id={}'.format(upload_id)})
 
+        file_stream.add_writer('sha512', streams.HashStreamWriter(hashlib.sha512))
         result, created = await provider.upload(file_stream, path)
 
+        item['sha512'] = file_stream.writers['sha512'].hexdigest
         expected = GoogleDriveInstitutionsFileMetadata(item, path)
 
         assert created is True
@@ -450,8 +455,10 @@ class TestUpload:
         aiohttpretty.register_uri('PATCH', url, params=start_upload_params,
                                   headers={'LOCATION': 'http://waterbutler.io?upload_id={}'.format(upload_id)})
 
+        file_stream.add_writer('sha512', streams.HashStreamWriter(hashlib.sha512))
         result, created = await provider.upload(file_stream, path)
 
+        item['sha512'] = file_stream.writers['sha512'].hexdigest
         expected = GoogleDriveInstitutionsFileMetadata(item, path)
 
         assert created is False
@@ -484,39 +491,14 @@ class TestUpload:
                                   headers={'LOCATION': 'http://waterbutler.io?upload_id={}'.format(upload_id)})
         aiohttpretty.register_json_uri('PUT', url, params=finish_upload_params, body=item)
 
+        file_stream.add_writer('sha512', streams.HashStreamWriter(hashlib.sha512))
         result, created = await provider.upload(file_stream, path)
 
+        item['sha512'] = file_stream.writers['sha512'].hexdigest
         expected = GoogleDriveInstitutionsFileMetadata(item, path)
 
         assert created is True
         assert result == expected
-        assert aiohttpretty.has_call(method='POST', uri=url, params=start_upload_params)
-        assert aiohttpretty.has_call(method='PUT', uri=url, params=finish_upload_params)
-
-
-    @pytest.mark.asyncio
-    @pytest.mark.aiohttpretty
-    async def test_upload_checksum_mismatch(self, provider, file_stream, root_provider_fixtures):
-        upload_id = '7'
-        path = WaterButlerPath('/birdie.jpg', _ids=(provider.folder['id'], None))
-
-        url = provider._build_upload_url('files')
-        start_upload_params = {'uploadType': 'resumable',
-                               'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,' \
-                                         'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
-
-        finish_upload_params = {'uploadType': 'resumable', 'upload_id': upload_id,
-                                'fields': 'id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,' \
-                                          'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
-
-        aiohttpretty.register_json_uri('PUT', url, params=finish_upload_params,
-                                       body=root_provider_fixtures['checksum_mismatch_metadata'])
-        aiohttpretty.register_uri('POST', url, params=start_upload_params,
-                                  headers={'LOCATION': 'http://waterbutler.io?upload_id={}'.format(upload_id)})
-
-        with pytest.raises(exceptions.UploadChecksumMismatchError):
-            await provider.upload(file_stream, path)
-
         assert aiohttpretty.has_call(method='POST', uri=url, params=start_upload_params)
         assert aiohttpretty.has_call(method='PUT', uri=url, params=finish_upload_params)
 
@@ -1045,9 +1027,16 @@ class TestMetadata:
                                       'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
         aiohttpretty.register_json_uri('GET', list_file_url, params=list_file_params, body=file_metadata)
 
+        file_content = b'we love you conrad'
+        download_file_url = provider.build_url('files', file_metadata['id'])
+        download_file_params = {'alt': 'media'}
+        aiohttpretty.register_uri('GET', download_file_url, params=download_file_params, body=file_content, auto_length=True)
+
         result = await provider.metadata(path)
 
+        file_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
         expected = GoogleDriveInstitutionsFileMetadata(file_metadata, path)
+
         assert result == expected
 
     @pytest.mark.asyncio
@@ -1094,31 +1083,43 @@ class TestMetadata:
 
         aiohttpretty.register_json_uri('GET', url, params=params, body=item)
 
+        file_content = b'we love you conrad'
+        download_file_url = provider.build_url('files', item['id'])
+        download_file_params = {'alt': 'media'}
+        aiohttpretty.register_uri('GET', download_file_url, params=download_file_params, body=file_content, auto_length=True)
+
         result = await provider.metadata(path)
 
+        item['sha512'] = hashlib.sha512(file_content).hexdigest()
         expected = GoogleDriveInstitutionsFileMetadata(item, path)
+
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=url, params=params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url, params=download_file_params)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
     async def test_metadata_root_folder(self, provider, root_provider_fixtures):
         path = await provider.validate_path('/')
+        body = root_provider_fixtures['list_file']
+        item = body['files'][0]
         query = provider._build_query(provider.folder['id'])
         list_file_url = provider.build_url('files')
         list_file_params = {'q': query, 'alt':'json', 'pageSize': '1000',
                             'fields': 'nextPageToken,files(id,name,version,size,modifiedTime,createdTime,mimeType,webViewLink,' \
                                                           'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit))'}
-        aiohttpretty.register_json_uri('GET', list_file_url, params=list_file_params,
-                                       body=root_provider_fixtures['list_file'])
+        aiohttpretty.register_json_uri('GET', list_file_url, params=list_file_params, body=body)
 
+        file_content = b'we love you conrad'
+        download_file_url = provider.build_url('files', item['id'])
+        download_file_params = {'alt': 'media'}
+        aiohttpretty.register_uri('GET', download_file_url, params=download_file_params, body=file_content, auto_length=True)
 
         result = await provider.metadata(path)
 
-        expected = GoogleDriveInstitutionsFileMetadata(
-            root_provider_fixtures['list_file']['files'][0],
-            path.child(root_provider_fixtures['list_file']['files'][0]['name'])
-        )
+        item['sha512'] = hashlib.sha512(file_content).hexdigest()
+        expected = GoogleDriveInstitutionsFileMetadata(item, path.child(item['name']))
+
         assert result == [expected]
 
     @pytest.mark.asyncio
@@ -1143,12 +1144,19 @@ class TestMetadata:
         aiohttpretty.register_json_uri('GET', url, params=params, body=body)
         aiohttpretty.register_json_uri('GET', url, params=children_params, body={'files': []})
 
+        file_content = b'we love you conrad'
+        download_file_url = provider.build_url('files', item['id'])
+        download_file_params = {'alt': 'media'}
+        aiohttpretty.register_uri('GET', download_file_url, params=download_file_params, body=file_content, auto_length=True)
+
         result = await provider.metadata(path)
 
+        item['sha512'] = hashlib.sha512(file_content).hexdigest()
         expected = GoogleDriveInstitutionsFileMetadata(item, path.child(item['name']))
 
         assert result == [expected]
         assert aiohttpretty.has_call(method='GET', uri=url, params=params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url, params=download_file_params)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1195,10 +1203,15 @@ class TestMetadata:
         revisions_params = {'fields': 'revisions(id,mimeType,modifiedTime,exportLinks,originalFilename,md5Checksum,size)'}
         aiohttpretty.register_json_uri('GET', revisions_url, params=revisions_params, body=revisions_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = metadata_body['exportLinks'][self.GDOC_EXPORT_MIME_TYPE]
+        aiohttpretty.register_uri('GET', download_file_url, body=file_content, auto_length=True)
+
         result = await provider.metadata(path)
 
         local_metadata = copy.deepcopy(metadata_body)
         local_metadata['version'] = revisions_body['revisions'][-1]['id']
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
         expected = GoogleDriveInstitutionsFileMetadata(local_metadata, path)
 
         assert result == expected
@@ -1220,12 +1233,19 @@ class TestMetadata:
         revision_params = {'fields': 'id,mimeType,modifiedTime,exportLinks,originalFilename,md5Checksum,size'}
         aiohttpretty.register_json_uri('GET', revision_url, params=revision_params, body=revision_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = revision_body['exportLinks'][self.GDOC_EXPORT_MIME_TYPE]
+        aiohttpretty.register_uri('GET', download_file_url, body=file_content, auto_length=True)
+
         result = await provider.metadata(path, revision=self.GDOC_GOOD_REVISION)
 
-        expected = GoogleDriveInstitutionsFileRevisionMetadata(revision_body, path)
+        local_revision = copy.deepcopy(revision_body)
+        local_revision['sha512'] = hashlib.sha512(file_content).hexdigest()
+        expected = GoogleDriveInstitutionsFileRevisionMetadata(local_revision, path)
 
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=revision_url, params=revision_params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1266,15 +1286,21 @@ class TestMetadata:
         revisions_params = {'fields': 'revisions(id,mimeType,modifiedTime,exportLinks,originalFilename,md5Checksum,size)'}
         aiohttpretty.register_json_uri('GET', revisions_url, params=revisions_params, body=revisions_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = metadata_body['exportLinks'][self.GDOC_EXPORT_MIME_TYPE]
+        aiohttpretty.register_uri('GET', download_file_url, body=file_content, auto_length=True)
+
         result = await provider.metadata(path, revision=self.MAGIC_REVISION)
 
         local_metadata = copy.deepcopy(metadata_body)
         local_metadata['version'] = revisions_body['revisions'][-1]['id']
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
         expected = GoogleDriveInstitutionsFileMetadata(local_metadata, path)
 
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=metadata_url, params=metadata_params)
         assert aiohttpretty.has_call(method='GET', uri=revisions_url, params=revisions_params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1290,14 +1316,20 @@ class TestMetadata:
                                      'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
         aiohttpretty.register_json_uri('GET', metadata_url, params=metadata_params, body=metadata_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = metadata_body['exportLinks'][self.GDOC_EXPORT_MIME_TYPE]
+        aiohttpretty.register_uri('GET', download_file_url, body=file_content, auto_length=True)
+
         result = await provider.metadata(path)
 
         local_metadata = copy.deepcopy(metadata_body)
         local_metadata['version'] = local_metadata['modifiedTime'] + ds.DRIVE_IGNORE_VERSION
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
         expected = GoogleDriveInstitutionsFileMetadata(local_metadata, path)
 
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=metadata_url, params=metadata_params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1333,14 +1365,20 @@ class TestMetadata:
                                      'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
         aiohttpretty.register_json_uri('GET', metadata_url, params=metadata_params, body=metadata_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = metadata_body['exportLinks'][self.GDOC_EXPORT_MIME_TYPE]
+        aiohttpretty.register_uri('GET', download_file_url, body=file_content, auto_length=True)
+
         result = await provider.metadata(path, revision=self.MAGIC_REVISION)
 
         local_metadata = copy.deepcopy(metadata_body)
         local_metadata['version'] = local_metadata['modifiedTime'] + ds.DRIVE_IGNORE_VERSION
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
         expected = GoogleDriveInstitutionsFileMetadata(local_metadata, path)
 
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=metadata_url, params=metadata_params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1356,12 +1394,20 @@ class TestMetadata:
                                      'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
         aiohttpretty.register_json_uri('GET', metadata_url, params=metadata_params, body=metadata_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = provider.build_url('files', metadata_body['id'])
+        download_file_params = {'alt': 'media'}
+        aiohttpretty.register_uri('GET', download_file_url, params=download_file_params, body=file_content, auto_length=True)
+
         result = await provider.metadata(path)
 
-        expected = GoogleDriveInstitutionsFileMetadata(metadata_body, path)
+        local_metadata = copy.deepcopy(metadata_body)
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
+        expected = GoogleDriveInstitutionsFileMetadata(local_metadata, path)
 
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=metadata_url, params=metadata_params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url, params=download_file_params)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1378,12 +1424,20 @@ class TestMetadata:
         revision_params = {'fields': 'id,mimeType,modifiedTime,exportLinks,originalFilename,md5Checksum,size'}
         aiohttpretty.register_json_uri('GET', revision_url, params=revision_params, body=revision_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = provider.build_url('files', metadata_body['id'], 'revisions', revision_body['id'])
+        download_file_params = {'alt': 'media'}
+        aiohttpretty.register_uri('GET', download_file_url, params=download_file_params, body=file_content, auto_length=True)
+
         result = await provider.metadata(path, revision=self.JPEG_GOOD_REVISION)
 
-        expected = GoogleDriveInstitutionsFileRevisionMetadata(revision_body, path)
+        local_revision = copy.deepcopy(revision_body)
+        local_revision['sha512'] = hashlib.sha512(file_content).hexdigest()
+        expected = GoogleDriveInstitutionsFileRevisionMetadata(local_revision, path)
 
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=revision_url, params=revision_params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url, params=download_file_params)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1419,11 +1473,20 @@ class TestMetadata:
                                      'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
         aiohttpretty.register_json_uri('GET', metadata_url, params=metadata_params, body=metadata_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = provider.build_url('files', metadata_body['id'])
+        download_file_params = {'alt': 'media'}
+        aiohttpretty.register_uri('GET', download_file_url, params=download_file_params, body=file_content, auto_length=True)
+
         result = await provider.metadata(path, revision=self.MAGIC_REVISION)
 
-        expected = GoogleDriveInstitutionsFileMetadata(metadata_body, path)
+        local_metadata = copy.deepcopy(metadata_body)
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
+        expected = GoogleDriveInstitutionsFileMetadata(local_metadata, path)
+
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=metadata_url, params=metadata_params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url, params=download_file_params)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1439,11 +1502,20 @@ class TestMetadata:
                                      'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
         aiohttpretty.register_json_uri('GET', metadata_url, params=metadata_params, body=metadata_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = provider.build_url('files', metadata_body['id'])
+        download_file_params = {'alt': 'media'}
+        aiohttpretty.register_uri('GET', download_file_url, params=download_file_params, body=file_content, auto_length=True)
+
         result = await provider.metadata(path)
 
-        expected = GoogleDriveInstitutionsFileMetadata(metadata_body, path)
+        local_metadata = copy.deepcopy(metadata_body)
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
+        expected = GoogleDriveInstitutionsFileMetadata(local_metadata, path)
+
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=metadata_url, params=metadata_params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url, params=download_file_params)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1479,11 +1551,20 @@ class TestMetadata:
                                      'originalFilename,md5Checksum,exportLinks,ownedByMe,capabilities(canEdit)'}
         aiohttpretty.register_json_uri('GET', metadata_url, params=metadata_params, body=metadata_body)
 
+        file_content = b'we love you conrad'
+        download_file_url = provider.build_url('files', metadata_body['id'])
+        download_file_params = {'alt': 'media'}
+        aiohttpretty.register_uri('GET', download_file_url, params=download_file_params, body=file_content, auto_length=True)
+
         result = await provider.metadata(path, revision=self.MAGIC_REVISION)
 
-        expected = GoogleDriveInstitutionsFileMetadata(metadata_body, path)
+        local_metadata = copy.deepcopy(metadata_body)
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
+        expected = GoogleDriveInstitutionsFileMetadata(local_metadata, path)
+
         assert result == expected
         assert aiohttpretty.has_call(method='GET', uri=metadata_url, params=metadata_params)
+        assert aiohttpretty.has_call(method='GET', uri=download_file_url, params=download_file_params)
 
 
 class TestRevisions:
@@ -1625,6 +1706,8 @@ class TestCreateFolder:
 
 class TestIntraFunctions:
 
+    GDOC_EXPORT_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
     async def test_intra_move_file(self, provider, root_provider_fixtures):
@@ -1648,8 +1731,15 @@ class TestIntraFunctions:
         delete_url = provider.build_url('files', item['id'])
         aiohttpretty.register_uri('DELETE', delete_url, status=204)
 
+        file_content = b'we love you conrad'
+        download_file_url = item['exportLinks'][self.GDOC_EXPORT_MIME_TYPE]
+        aiohttpretty.register_uri('GET', download_file_url, body=file_content, auto_length=True)
+
         result, created = await provider.intra_move(provider, src_path, dest_path)
-        expected = GoogleDriveInstitutionsFileMetadata(item, dest_path)
+
+        local_metadata = copy.deepcopy(item)
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
+        expected = GoogleDriveInstitutionsFileMetadata(local_metadata, dest_path)
 
         assert result == expected
         assert aiohttpretty.has_call(method='DELETE', uri=delete_url)
@@ -1689,7 +1779,7 @@ class TestIntraFunctions:
         result, created = await provider.intra_move(provider, src_path, dest_path)
         expected = GoogleDriveInstitutionsFolderMetadata(item, dest_path)
         expected.children = [
-            provider._serialize_item(dest_path.child(item['name']), item)
+            await provider._serialize_item(dest_path.child(item['name']), item)
             for item in children_list['files']
         ]
 
@@ -1716,8 +1806,15 @@ class TestIntraFunctions:
         delete_url = provider.build_url('files', item['id'])
         aiohttpretty.register_uri('DELETE', delete_url, status=204)
 
+        file_content = b'we love you conrad'
+        download_file_url = item['exportLinks'][self.GDOC_EXPORT_MIME_TYPE]
+        aiohttpretty.register_uri('GET', download_file_url, body=file_content, auto_length=True)
+
         result, created = await provider.intra_copy(provider, src_path, dest_path)
-        expected = GoogleDriveInstitutionsFileMetadata(item, dest_path)
+
+        local_metadata = copy.deepcopy(item)
+        local_metadata['sha512'] = hashlib.sha512(file_content).hexdigest()
+        expected = GoogleDriveInstitutionsFileMetadata(local_metadata, dest_path)
 
         assert result == expected
         assert aiohttpretty.has_call(method='DELETE', uri=delete_url)
@@ -1747,7 +1844,7 @@ class TestOperationsOrMisc:
     async def test__serialize_item_raw(self, provider, root_provider_fixtures):
         item = root_provider_fixtures['docs_file_metadata']
 
-        assert provider._serialize_item(None, item, True) == item
+        assert await provider._serialize_item(None, item, True) == item
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty

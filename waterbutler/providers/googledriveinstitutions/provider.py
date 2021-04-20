@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 import hashlib
@@ -18,6 +19,15 @@ from waterbutler.providers.googledriveinstitutions.metadata import (GoogleDriveI
                                                         GoogleDriveInstitutionsFileMetadata,
                                                         GoogleDriveInstitutionsFolderMetadata,
                                                         GoogleDriveInstitutionsFileRevisionMetadata, )
+
+logger = logging.getLogger(__name__)
+
+ENABLE_DEBUG = True
+
+
+def DEBUG(msg):
+    if ENABLE_DEBUG:
+        logger.error(u'DEBUG_googledriveinstitutions: {}'.format(msg))
 
 
 def clean_query(query: str):
@@ -170,6 +180,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             metadata._children = await self._folder_metadata(dest_path)
             return metadata, created
         else:
+            data['sha512'] = await self._get_checksum(data)
             return GoogleDriveInstitutionsFileMetadata(data, dest_path), created  # type: ignore
 
     async def intra_copy(self,
@@ -195,6 +206,8 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             throws=exceptions.IntraMoveError,
         ) as resp:
             data = await resp.json()
+
+        data['sha512'] = await self._get_checksum(data)
 
         # GoogleDrive doesn't support intra-copy for folders, so dest_path will always
         # be a file.  See can_intra_copy() for type check.
@@ -270,15 +283,14 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         else:
             segments = []
 
-        stream.add_writer('md5', streams.HashStreamWriter(hashlib.md5))
+        stream.add_writer('sha512', streams.HashStreamWriter(hashlib.sha512))
 
         upload_metadata = self._build_upload_metadata(not path.identifier, path.parent.identifier, path.name)
         upload_id = await self._start_resumable_upload(not path.identifier, segments, stream.size,
                                                        upload_metadata)
         data = await self._finish_resumable_upload(segments, stream, upload_id)
 
-        if data['md5Checksum'] != stream.writers['md5'].hexdigest:
-            raise exceptions.UploadChecksumMismatchError()
+        data['sha512'] = stream.writers['sha512'].hexdigest
 
         created = path.identifier is None
         path._parts[-1]._id = data.get('id')
@@ -431,14 +443,16 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
     def _build_upload_url(self, *segments, **query):
         return provider.build_url(pd_settings.BASE_UPLOAD_URL, *segments, **query)
 
-    def _serialize_item(self,
+    async def _serialize_item(self,
                         path: WaterButlerPath,
                         item: dict,
-                        raw: bool=False) -> Union[BaseGoogleDriveInstitutionsMetadata, dict]:
+                        raw: bool=False,
+                        is_revision: bool=False) -> Union[BaseGoogleDriveInstitutionsMetadata, dict]:
         if raw:
             return item
         if item['mimeType'] == self.FOLDER_MIME_TYPE:
             return GoogleDriveInstitutionsFolderMetadata(item, path)
+        item['sha512'] = await self._get_checksum(item, path, is_revision)
         return GoogleDriveInstitutionsFileMetadata(item, path)
 
     def _build_upload_metadata(self, created: bool, folder_id: str, name: str) -> dict:
@@ -574,7 +588,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
                 ret.append(await resp.json())
         return ret
 
-    async def _handle_docs_versioning(self, path: GoogleDriveInstitutionsPath, revisions: dict, raw: bool=True):
+    async def _handle_docs_versioning(self, path: GoogleDriveInstitutionsPath, metadata: dict, raw: bool=True):
         """Sends an extra request to GDrive to fetch revision information for Google Docs. Needed
         because Google Docs use a different versioning system from regular files.
 
@@ -588,7 +602,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         will error.
 
         :param GoogleDrivePath path: the path of the google doc to get version information for
-        :param dict revisions: a raw response object from the GDrive file metadata endpoint
+        :param dict metadata: a raw response object from the GDrive file metadata endpoint
         :param bool raw: should we return the raw response object from the GDrive API?
         :rtype: GoogleDriveFileMetadata
         :rtype: dict
@@ -596,7 +610,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
         """
         async with self.request(
             'GET',
-            self.build_url('files', revisions['id'], 'revisions'),
+            self.build_url('files', metadata['id'], 'revisions'),
             params={
                 'fields': 'revisions(id,mimeType,modifiedTime,exportLinks,originalFilename,md5Checksum,size)'
             },
@@ -607,15 +621,15 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             has_revisions = revisions_data['revisions'] is not None
 
         # Revisions are not available for some sharing configurations. If revisions list is empty,
-        # use the etag of the file plus a sentinel string as a dummy revision ID.
+        # use the modifiedTime of the file plus a sentinel string as a dummy revision ID.
         self.metrics.add('handle_docs_versioning.empty_revision_list', not has_revisions)
         if has_revisions:
-            revisions['version'] = revisions_data['revisions'][-1]['id']
+            metadata['version'] = revisions_data['revisions'][-1]['id']
         else:
             # If there are no revisions use modifiedTime as vid
-            revisions['version'] = revisions['modifiedTime'] + pd_settings.DRIVE_IGNORE_VERSION
+            metadata['version'] = metadata['modifiedTime'] + pd_settings.DRIVE_IGNORE_VERSION
 
-        return self._serialize_item(path, revisions, raw=raw)
+        return await self._serialize_item(path, metadata, raw=raw)
 
     async def _folder_metadata(self,
                                path: WaterButlerPath,
@@ -639,7 +653,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             ) as resp:
                 resp_json = await resp.json()
                 full_resp.extend([
-                    self._serialize_item(path.child(item['name']), item, raw=raw)
+                    await self._serialize_item(path.child(item['name']), item, raw=raw)
                     for item in resp_json['files']
                 ])
                 nextPageToken = resp_json.get('nextPageToken')
@@ -722,6 +736,7 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
             raise exceptions.NotFoundError(path)
 
         if revision and valid_revision:
+            data['sha512'] = await self._get_checksum(data, path, is_revision=True)
             return GoogleDriveInstitutionsFileRevisionMetadata(data, path)
 
         self.metrics.add('_file_metadata.user_role', 'ownedByMe:' + str(data['ownedByMe']) + ', canEdit:' + str(data['capabilities']['canEdit']))
@@ -734,7 +749,11 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
                 # empty, use the modifiedTime of the file plus a sentinel string as a dummy revision ID.
                 data['version'] = data['modifiedTime'] + pd_settings.DRIVE_IGNORE_VERSION
 
-        return data if raw else GoogleDriveInstitutionsFileMetadata(data, path)
+        if raw:
+            return data
+        else:
+            data['sha512'] = await self._get_checksum(data)
+            return GoogleDriveInstitutionsFileMetadata(data, path)
 
     async def _delete_folder_contents(self, path: WaterButlerPath) -> None:
         """Given a WaterButlerPath, delete all contents of folder
@@ -770,3 +789,39 @@ class GoogleDriveInstitutionsProvider(provider.BaseProvider):
                 self.build_url('files', child['id']),
                 expects=(204, ),
                 throws=exceptions.DeleteError)
+
+    async def _get_checksum(self, metadata: dict, path=None, is_revision: bool=False):
+        checksum = None
+        url = None
+        params = {}
+
+        file_id = metadata['id']
+
+        if utils.is_docs_file(metadata):
+            try:
+                url = utils.get_export_link(metadata)
+            except KeyError:
+                # Not supported except ('.gdoc', '.gdraw', '.gslides', '.gsheet').
+                return checksum
+        else:
+            if is_revision:
+                if path is not None:
+                    url = self.build_url('files', path.identifier, 'revisions', file_id)
+                    params = {'alt': 'media'}
+            else:
+                url = self.build_url('files', file_id)
+                params = {'alt': 'media'}
+
+        async with self.request(
+            'GET',
+            url,
+            params=params,
+            expects=(200, 206),
+            throws=exceptions.DownloadError,
+        ) as resp:
+            data = await resp.read()
+
+        checksum = hashlib.sha512(data).hexdigest()
+        DEBUG('sha512: {}'.format(checksum))
+
+        return checksum

@@ -121,27 +121,6 @@
 
     "revalidate_path_folder_metadata_1": {"files": [{"id": "0BwZjL1zsLzNbNG5zVzJFYXF4bm8"}]},
 
-    "revalidate_path_folder_metadata_2": {"name": "inception folder yo", "id": "0BwZjL1zsLzNbNG5zVzJFYXF4bm8", "mimeType": "application/vnd.google-apps.folder"},
+    "revalidate_path_folder_metadata_2": {"name": "inception folder yo", "id": "0BwZjL1zsLzNbNG5zVzJFYXF4bm8", "mimeType": "application/vnd.google-apps.folder"}
 
-    "checksum_mismatch_metadata": {
-        "kind": "drive#file",
-        "id": "1GwpK7IozbO01RiyC5aPd66v7ShEViqggvT6ur5_pZMFo-ZzQHOgkyoU3ztjf0ytKt0HSdvUg6O2nmoYR",
-        "name": "PART_1420130849837.pdf",
-        "mimeType": "application/pdf",
-        "trashed": false,
-        "parents": [
-            "0ABtc_QrXguAwUk9PVA"
-        ],
-        "version": "143933",
-        "webViewLink": "https://docs.google.com/file/d/1GwpK7IozbO01RiyC5aPd66v7ShEViqggvT6ur5_pZMFo-ZzQHOgkyoU3ztjf0ytKt0HSdvUg6O2nmoYR/edit?usp=drivesdk",
-        "createdTime": "2015-01-01T16:54:58.929Z",
-        "modifiedTime": "2015-01-01T16:54:58.929Z",
-        "ownedByMe": true,
-        "capabilities": {
-            "canEdit": true
-        },
-        "originalFilename": "PART_1420130849837.pdf",
-        "md5Checksum": "nopenopenopenopenope",
-        "size": "918668"
-    }
 }

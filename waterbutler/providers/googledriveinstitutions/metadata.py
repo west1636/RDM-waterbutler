@@ -117,10 +117,10 @@ class GoogleDriveInstitutionsFileMetadata(BaseGoogleDriveInstitutionsMetadata, m
 
         if self.is_google_doc:
             ret['downloadExt'] = utils.get_download_extension(self.raw)
-        else:
-            if not hasattr(ret, 'hashes'):
-                ret['hashes'] = {}
-            ret['hashes']['md5'] = self.raw.get('md5Checksum')  # no md5 for non-exportable file
+
+        if not hasattr(ret, 'hashes'):
+            ret['hashes'] = {}
+        ret['hashes']['sha512'] = self.raw.get('sha512', None)
 
         return ret
 
@@ -163,8 +163,17 @@ class GoogleDriveInstitutionsFileRevisionMetadata(GoogleDriveInstitutionsFileMet
         appropriate.  GDocs don't have an md5, non-GDocs don't need a downloadExt.
         """
         if self.is_google_doc:
-            return {'downloadExt': utils.get_download_extension(self.raw)}
-        return {'md5': self.raw['md5Checksum']}
+            return {
+                'downloadExt': utils.get_download_extension(self.raw),
+                'hashes': {
+                    'sha512': self.raw.get('sha512', None)
+                },
+            }
+        return {
+            'hashes': {
+                'sha512': self.raw.get('sha512', None)
+            },
+        }
 
     @property
     def _file_name(self):
