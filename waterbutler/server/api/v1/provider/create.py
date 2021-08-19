@@ -1,5 +1,7 @@
-from waterbutler.core import exceptions
+import unicodedata
 
+from waterbutler.core import exceptions
+from waterbutler import settings
 
 class CreateMixin:
 
@@ -48,6 +50,8 @@ class CreateMixin:
         """
 
         self.childs_name = self.get_query_argument('name', default=None)
+        if self.childs_name is not None:
+            self.childs_name = unicodedata.normalize(config.FILENAME_NOMALIZE_RULE, self.childs_name)
 
         # handle newfile and newfolder naming conflicts
         if self.path.is_dir:
