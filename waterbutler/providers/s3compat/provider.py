@@ -455,6 +455,9 @@ class S3CompatProvider(provider.BaseProvider):
             throws=exceptions.MetadataError,
         )
         await resp.release()
+        logger.info('s3-head_object-res:')
+        logger.info(resp.headers)
+
         return S3CompatFileMetadataHeaders(self, path.full_path, resp.headers)
 
     async def _metadata_folder(self, path):
