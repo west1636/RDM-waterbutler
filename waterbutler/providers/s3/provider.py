@@ -686,8 +686,6 @@ class S3Provider(provider.BaseProvider):
 
     async def _metadata_folder(self, path, next_token=None):
         await self._check_region()
-        contents = []
-        prefixes = []
 
         params = {'prefix': path.path, 'delimiter': '/', 'max-keys': '1000'}
         if next_token is not None:
@@ -701,13 +699,12 @@ class S3Provider(provider.BaseProvider):
             throws=exceptions.MetadataError,
         )
 
-        request_contents = await resp.read()
+        contents = await resp.read()
 
-        parsed = xmltodict.parse(request_contents, strip_whitespace=False)['ListBucketResult']
-        next_marker_string = parsed.get('NextMarker', '')
-
-        request_contents = parsed.get('Contents', [])
-        request_prefixes = parsed.get('CommonPrefixes', [])
+        parsed = xmltodict.parse(contents, strip_whitespace=False)['ListBucketResult']
+        next_token_string = parsed.get('NextMarker', '')
+        contents = parsed.get('Contents', [])
+        prefixes = parsed.get('CommonPrefixes', [])
 
         if not contents and not prefixes and not path.is_root:
             # If contents and prefixes are empty then this "folder"
@@ -721,12 +718,10 @@ class S3Provider(provider.BaseProvider):
             )
             await resp.release()
 
-        if isinstance(request_contents, dict):
-            request_contents = [request_contents]
-        if isinstance(request_prefixes, dict):
-            request_prefixes = [request_prefixes]
-        contents.extend(request_contents)
-        prefixes.extend(request_prefixes)
+        if isinstance(contents, dict):
+            contents = [contents]
+        if isinstance(prefixes, dict):
+            prefixes = [prefixes]
 
         items = [
             S3FolderMetadata(item)
@@ -744,7 +739,7 @@ class S3Provider(provider.BaseProvider):
 
         result = dict()
         result['data'] = items
-        result['next_token'] = next_marker_string
+        result['next_token'] = next_token_string
         return result
 
     async def _check_region(self):
