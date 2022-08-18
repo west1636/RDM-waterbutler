@@ -637,6 +637,8 @@ class S3Provider(provider.BaseProvider):
         await self._check_region()
 
         if path.is_dir:
+            if 'next_token' in kwargs:
+                return (await self._metadata_folder(path, kwargs['next_token']))
             return (await self._metadata_folder(path))
 
         return (await self._metadata_file(path, revision=revision))
@@ -682,10 +684,15 @@ class S3Provider(provider.BaseProvider):
         await resp.release()
         return S3FileMetadataHeaders(path.path, resp.headers)
 
-    async def _metadata_folder(self, path):
+    async def _metadata_folder(self, path, next_token=None):
         await self._check_region()
+        contents = []
+        prefixes = []
 
-        params = {'prefix': path.path, 'delimiter': '/'}
+        params = {'prefix': path.path, 'delimiter': '/', 'max-keys': '1000'}
+        if next_token is not None:
+            params['marker'] = next_token
+
         resp = await self.make_request(
             'GET',
             functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET', query_parameters=params),
@@ -694,12 +701,13 @@ class S3Provider(provider.BaseProvider):
             throws=exceptions.MetadataError,
         )
 
-        contents = await resp.read()
+        request_contents = await resp.read()
 
-        parsed = xmltodict.parse(contents, strip_whitespace=False)['ListBucketResult']
+        parsed = xmltodict.parse(request_contents, strip_whitespace=False)['ListBucketResult']
+        next_marker_string = parsed.get('NextMarker', '')
 
-        contents = parsed.get('Contents', [])
-        prefixes = parsed.get('CommonPrefixes', [])
+        request_contents = parsed.get('Contents', [])
+        request_prefixes = parsed.get('CommonPrefixes', [])
 
         if not contents and not prefixes and not path.is_root:
             # If contents and prefixes are empty then this "folder"
@@ -713,11 +721,12 @@ class S3Provider(provider.BaseProvider):
             )
             await resp.release()
 
-        if isinstance(contents, dict):
-            contents = [contents]
-
-        if isinstance(prefixes, dict):
-            prefixes = [prefixes]
+        if isinstance(request_contents, dict):
+            request_contents = [request_contents]
+        if isinstance(request_prefixes, dict):
+            request_prefixes = [request_prefixes]
+        contents.extend(request_contents)
+        prefixes.extend(request_prefixes)
 
         items = [
             S3FolderMetadata(item)
@@ -733,7 +742,10 @@ class S3Provider(provider.BaseProvider):
             else:
                 items.append(S3FileMetadata(content))
 
-        return items
+        result = dict()
+        result['data'] = items
+        result['next_token'] = next_marker_string
+        return result
 
     async def _check_region(self):
         """Lookup the region via bucket name, then update the host to match.

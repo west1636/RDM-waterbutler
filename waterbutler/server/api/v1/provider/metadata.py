@@ -10,6 +10,7 @@ from waterbutler.server import utils
 from waterbutler.core import mime_types
 from waterbutler.core.utils import make_disposition
 from waterbutler.core.streams import ResponseStreamReader
+from waterbutler.providers.s3 import S3Provider
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,18 @@ class MetadataMixin:
             return (await self.download_folder_as_zip())
 
         version = self.requested_version
-        data = await self.provider.metadata(self.path, version=version, revision=version)
+        data = {}
+
+        if 'next_token' in self.request.query_arguments and isinstance(self.provider, S3Provider):
+            next_token = self.request.query_arguments['next_marker'][0].decode("utf-8")
+            data = await self.provider.metadata(self.path, version=version, revision=version, next_token=next_token)
+        else:
+            data = await self.provider.metadata(self.path, version=version, revision=version)
+
+        if isinstance(self.provider, S3Provider):
+            return self.write({'data': [x.json_api_serialized(self.resource) for x in data['data']],
+                               'next_token': data['next_token']})
+
         return self.write({'data': [x.json_api_serialized(self.resource) for x in data]})
 
     async def get_file(self):
