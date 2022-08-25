@@ -724,7 +724,7 @@ class S3CompatProvider(provider.BaseProvider):
 
     async def _metadata_folder(self, path, next_token=None):
         prefix = path.full_path.lstrip('/')  # '/' -> '', '/A/B' -> 'A/B'
-        params = {'prefix': prefix, 'delimiter': '/'}
+        params = {'prefix': prefix, 'delimiter': '/', 'max-keys': '1000'}
         if next_token is not None:
             params['marker'] = next_token
         resp = await self.make_request(
