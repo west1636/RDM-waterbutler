@@ -1,6 +1,7 @@
 import uuid
 import socket
 import asyncio
+import inspect  # noqa
 import logging
 from http import HTTPStatus
 
@@ -10,6 +11,7 @@ import sentry_sdk
 
 from waterbutler.core import utils
 from waterbutler.server import settings
+from waterbutler.utils import inspect_info  # noqa
 from waterbutler.server.api.v1 import core
 from waterbutler.core import remote_logging
 from waterbutler.server.auth import AuthHandler
@@ -37,8 +39,10 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
     PRE_VALIDATORS = {'put': 'prevalidate_put', 'post': 'prevalidate_post'}
     POST_VALIDATORS = {'put': 'postvalidate_put'}
     PATTERN = r'/resources/(?P<resource>(?:\w|\d)+)/providers/(?P<provider>(?:\w|\d)+)(?P<path>/.*/?)'
+    location_id = None
 
     async def prepare(self, *args, **kwargs):
+        # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         method = self.request.method.lower()
 
         # TODO Find a nicer way to handle this
@@ -60,6 +64,9 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
         provider = self.path_kwargs['provider']
         self.resource = self.path_kwargs['resource']
 
+        if self.resource == 'export_location':
+            self.location_id = self.get_query_argument('location_id', default=None)
+
         with sentry_sdk.configure_scope() as scope:
             scope.set_tag('resource.id', self.resource)
             scope.set_tag('src_provider', self.path_kwargs['provider'])
@@ -75,11 +82,14 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
         # Delay setup of the provider when method is post, as we need to evaluate the json body
         # action.
         if method != 'post':
-            self.auth = await auth_handler.get(self.resource, provider, self.request,
-                                               path=self.path, version=self.requested_version)
-            self.provider = utils.make_provider(provider, self.auth['auth'],
-                                                self.auth['credentials'], self.auth['settings'])
+            self.auth = await auth_handler.get(
+                self.resource, provider, self.request, path=self.path, version=self.requested_version, location_id=self.location_id)
+            # logger.debug(f'auth: {self.auth}')
+            self.provider = utils.make_provider(
+                provider, self.auth['auth'], self.auth['credentials'], self.auth['settings'])
+            # logger.debug(f'provider: {self.provider}')
             self.path = await self.provider.validate_v1_path(self.path, **self.arguments)
+            # logger.debug(f'path: {self.path}')
 
         self.target_path = None
 
@@ -109,6 +119,7 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
         Will redirect to a signed URL if possible and accept_url is not False
         :raises: MustBeFileError if path is not a file
         """
+        # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         if self.path.is_dir:
             return (await self.get_folder())
         return (await self.get_file())

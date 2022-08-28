@@ -1,3 +1,4 @@
+import inspect  # noqa
 import logging
 import datetime
 
@@ -8,6 +9,7 @@ from aiohttp.client_exceptions import ClientError, ContentTypeError
 
 from waterbutler.core import exceptions
 from waterbutler.auth.osf import settings
+from waterbutler.utils import inspect_info  # noqa
 from waterbutler.core.auth import AuthType, BaseAuthHandler
 from waterbutler.settings import MFR_IDENTIFYING_HEADER
 
@@ -47,15 +49,17 @@ class OsfAuthHandler(BaseAuthHandler):
         return query_params
 
     async def make_request(self, params, headers, cookies):
+        # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         try:
             # Note: with simple request whose response is handled right afterwards without "being passed
             #       further along", use the context manager so WB doesn't need to handle the sessions.
+            # logger.debug(settings.API_URL)
             async with aiohttp.request(
-                'get',
-                settings.API_URL,
-                params=params,
-                headers=headers,
-                cookies=cookies,
+                    'get',
+                    settings.API_URL,
+                    params=params,
+                    headers=headers,
+                    cookies=cookies,
             ) as response:
                 if response.status != 200:
                     try:
@@ -70,6 +74,7 @@ class OsfAuthHandler(BaseAuthHandler):
                     data = jwt.decode(signed_jwt, settings.JWT_SECRET,
                                       algorithm=settings.JWT_ALGORITHM,
                                       options={'require_exp': True})
+                    # logger.debug(f'payload data: {data}')
                     return data['data']
                 except (jwt.InvalidTokenError, KeyError):
                     raise exceptions.AuthError(data, code=response.status)
@@ -101,8 +106,9 @@ class OsfAuthHandler(BaseAuthHandler):
         return payload
 
     async def get(self, resource, provider, request, action=None, auth_type=AuthType.SOURCE,
-                  path='', version=None):
+                  path='', version=None, location_id=None):
         """Used for v1"""
+        # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         method = request.method.lower()
 
         if method == 'post' and action:
@@ -151,20 +157,25 @@ class OsfAuthHandler(BaseAuthHandler):
             # View only must go outside of the jwt
             view_only = view_only[0].decode()
 
+        data = {
+            'nid': resource,
+            'provider': provider,
+            'action': osf_action,
+            'path': path,
+            'version': version,
+            'metrics': {
+                'referrer': request.headers.get('Referer'),
+                'user_agent': request.headers.get('User-Agent'),
+                'origin': request.headers.get('Origin'),
+                'uri': request.uri,
+            }
+        }
+        if resource == 'export_location':
+            data['location_id'] = location_id
+        # logger.debug(f'auth payload data: {data}')
+
         payload = await self.make_request(
-            self.build_payload({
-                'nid': resource,
-                'provider': provider,
-                'action': osf_action,
-                'path': path,
-                'version': version,
-                'metrics': {
-                    'referrer': request.headers.get('Referer'),
-                    'user_agent': request.headers.get('User-Agent'),
-                    'origin': request.headers.get('Origin'),
-                    'uri': request.uri,
-                }
-            }, cookie=cookie, view_only=view_only),
+            self.build_payload(data, cookie=cookie, view_only=view_only),
             headers,
             dict(request.cookies)
         )
