@@ -28,12 +28,12 @@ class AuthHandler:
         raise AuthHandler('no valid credential found')
 
     async def get(self, resource, provider, request, action=None, auth_type=AuthType.SOURCE,
-                  path='', version=None, location_id=None):
+                  path='', version=None, location_id=None, region_id=None):
         # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         for extension in self.manager.extensions:
             credential = await extension.obj.get(
                 resource, provider, request, action=action, auth_type=auth_type,
-                path=path, version=version, location_id=location_id)
+                path=path, version=version, location_id=location_id, region_id=region_id)
             if credential:
                 return credential
         raise AuthHandler('no valid credential found')

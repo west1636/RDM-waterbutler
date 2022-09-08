@@ -106,7 +106,7 @@ class OsfAuthHandler(BaseAuthHandler):
         return payload
 
     async def get(self, resource, provider, request, action=None, auth_type=AuthType.SOURCE,
-                  path='', version=None, location_id=None):
+                  path='', version=None, location_id=None, region_id=None):
         """Used for v1"""
         # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         method = request.method.lower()
@@ -172,6 +172,7 @@ class OsfAuthHandler(BaseAuthHandler):
         }
         if resource == 'export_location':
             data['location_id'] = location_id
+            data['region_id'] = region_id
         # logger.debug(f'auth payload data: {data}')
 
         payload = await self.make_request(
