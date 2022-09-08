@@ -1049,7 +1049,7 @@ class TestMetadata:
         aiohttpretty.register_uri('GET', url, params=params, body=folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
-        result = await provider._metadata_folder(path, next_marker='')
+        result = await provider._metadata_folder(path, next_token='')
 
         assert isinstance(result, dict)
         assert len(result) == 2
