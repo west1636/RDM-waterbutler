@@ -106,7 +106,7 @@ class OsfAuthHandler(BaseAuthHandler):
         return payload
 
     async def get(self, resource, provider, request, action=None, auth_type=AuthType.SOURCE,
-                  path='', version=None, location_id=None, region_id=None):
+                  path='', version=None, callback_log=True, location_id=None, region_id=None):
         """Used for v1"""
         # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         method = request.method.lower()
@@ -168,7 +168,8 @@ class OsfAuthHandler(BaseAuthHandler):
                 'user_agent': request.headers.get('User-Agent'),
                 'origin': request.headers.get('Origin'),
                 'uri': request.uri,
-            }
+            },
+            'callback_log': callback_log,
         }
         if resource == 'export_location':
             data['location_id'] = location_id
@@ -181,5 +182,5 @@ class OsfAuthHandler(BaseAuthHandler):
             dict(request.cookies)
         )
 
-        payload['auth']['callback_url'] = payload['callback_url']
+        payload['auth']['callback_url'] = payload['callback_url'] if callback_log else ''
         return payload
