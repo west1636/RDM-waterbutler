@@ -165,7 +165,7 @@ def build_folder_params(path):
 
 
 def build_folder_params_with_max_key(path):
-    return {'prefix': path.path, 'delimiter': '/', 'max-keys': '50'}
+    return {'prefix': path.path, 'delimiter': '/', 'max-keys': '1000'}
 
 
 class TestRegionDetection:
