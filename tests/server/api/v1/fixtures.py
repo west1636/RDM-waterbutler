@@ -1,17 +1,16 @@
-import os
-import sys
 import json
-from unittest import mock
-
+import os
 import pytest
-from tornado.web import HTTPError
-from tornado.httputil import HTTPServerRequest
+import sys
 from tornado.http1connection import HTTP1ConnectionParameters
+from tornado.httputil import HTTPServerRequest
+from tornado.web import HTTPError
+from unittest import mock
+from waterbutler.core.path import WaterButlerPath
+from waterbutler.server.api.v1.provider import ProviderHandler
+from waterbutler.tasks.exceptions import WaitTimeOutError
 
 import waterbutler
-from waterbutler.core.path import WaterButlerPath
-from waterbutler.tasks.exceptions import WaitTimeOutError
-from waterbutler.server.api.v1.provider import ProviderHandler
 from tests.utils import (MockProvider, MockFileMetadata, MockFolderMetadata,
                          MockFileRevisionMetadata, MockCoroutine, MockRequestBody, MockStream)
 
@@ -61,6 +60,14 @@ def mock_revision_metadata():
 @pytest.fixture()
 def mock_folder_children():
     return [MockFolderMetadata(), MockFileMetadata(), MockFileMetadata()]
+
+
+@pytest.fixture()
+def mock_folder_children_provider_s3():
+    data = dict()
+    data['data'] = [MockFolderMetadata()]
+    data['next_token'] = 'aaaa'
+    return data
 
 
 @pytest.fixture
@@ -180,42 +187,42 @@ def move_copy_args():
 @pytest.fixture
 def celery_src_copy_params():
     return {
-            'nid': 'test_source_resource',
-            'path': WaterButlerPath('/test_path', prepend=None),
-            'provider': {
-                'credentials': {},
-                'name': 'MockProvider',
-                'settings': {},
-                'auth': {}
-            }
+        'nid': 'test_source_resource',
+        'path': WaterButlerPath('/test_path', prepend=None),
+        'provider': {
+            'credentials': {},
+            'name': 'MockProvider',
+            'settings': {},
+            'auth': {}
+        }
     }
 
 
 @pytest.fixture
 def celery_dest_copy_params():
     return {
-            'nid': 'test_source_resource',
-            'path': WaterButlerPath('/test_path/', prepend=None),
-            'provider': {
-                'credentials': {},
-                'name': 'MockProvider',
-                'settings': {},
-                'auth': {}
-            }
+        'nid': 'test_source_resource',
+        'path': WaterButlerPath('/test_path/', prepend=None),
+        'provider': {
+            'credentials': {},
+            'name': 'MockProvider',
+            'settings': {},
+            'auth': {}
+        }
     }
 
 
 @pytest.fixture
 def celery_dest_copy_params_root():
     return {
-            'nid': 'test_source_resource',
-            'path': WaterButlerPath('/', prepend=None),
-            'provider': {
-                'credentials': {},
-                'name': 'MockProvider',
-                'settings': {},
-                'auth': {}
-            }
+        'nid': 'test_source_resource',
+        'path': WaterButlerPath('/', prepend=None),
+        'provider': {
+            'credentials': {},
+            'name': 'MockProvider',
+            'settings': {},
+            'auth': {}
+        }
     }
 
 
@@ -235,3 +242,27 @@ def serialized_metadata():
 def serialized_request():
     with open(os.path.join(os.path.dirname(__file__), 'fixtures/fixtures.json'), 'r') as fp:
         return json.load(fp)['serialized_request']
+
+
+@pytest.fixture
+def auth():
+    return {
+        'name': 'cat',
+        'email': 'cat@cat.com',
+    }
+
+
+@pytest.fixture
+def credentials():
+    return {
+        'access_key': 'Dont dead',
+        'secret_key': 'open inside',
+    }
+
+
+@pytest.fixture
+def settings():
+    return {
+        'bucket': 'that kerning',
+        'encrypt_uploads': False
+    }
