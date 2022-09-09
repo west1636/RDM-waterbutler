@@ -1,15 +1,15 @@
 import json
+
 import pytest
-from tests.server.api.v1.fixtures import (http_request, handler_auth, mock_stream,
-                                          mock_partial_stream, mock_file_metadata,
-                                          mock_folder_children, mock_revision_metadata,
-                                          mock_folder_children_provider_s3, auth, settings, credentials, )
-from tests.server.api.v1.utils import mock_handler
-from waterbutler.core.path import WaterButlerPath
-from waterbutler.providers.s3 import S3Provider
 
 from tests.utils import MockCoroutine
+from waterbutler.core.path import WaterButlerPath
 
+from tests.server.api.v1.utils import mock_handler
+from tests.server.api.v1.fixtures import (http_request, handler_auth, mock_stream,
+                                          mock_partial_stream, mock_file_metadata,
+                                          mock_folder_children, mock_revision_metadata)
+from waterbutler.providers.s3 import S3Provider
 
 @pytest.fixture
 def provider(auth, credentials, settings):
@@ -22,6 +22,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_header_file_metadata(self, http_request, mock_file_metadata):
+
         handler = mock_handler(http_request)
         handler.provider.metadata = MockCoroutine(return_value=mock_file_metadata)
 
@@ -44,6 +45,7 @@ class TestMetadataMixin:
         serialized_data = [x.json_api_serialized(handler.resource) for x in mock_folder_children]
 
         await handler.get_folder()
+
         handler.write.assert_called_once_with({'data': serialized_data})
 
     @pytest.mark.asyncio
@@ -65,7 +67,7 @@ class TestMetadataMixin:
         assert isinstance(serialized_data, dict)
 
     @pytest.mark.asyncio
-    async def test_get_folder_download_as_zip(self, http_request, ):
+    async def test_get_folder_download_as_zip(self, http_request,):
         # Including 'zip' in the query params should trigger the download_as_zip method
 
         handler = mock_handler(http_request)
@@ -78,6 +80,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_get_file_metadata(self, http_request):
+
         handler = mock_handler(http_request)
         handler.file_metadata = MockCoroutine()
         handler.request.query_arguments['meta'] = ''
@@ -102,6 +105,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_get_file_download_file(self, http_request):
+
         handler = mock_handler(http_request)
         handler.download_file = MockCoroutine()
         await handler.get_file()
@@ -110,6 +114,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_download_file_headers(self, http_request, mock_stream):
+
         handler = mock_handler(http_request)
         mock_stream.name = 'peanut-butter.docx'
         handler.provider.download = MockCoroutine(return_value=mock_stream)
@@ -126,6 +131,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_download_file_headers_no_stream_name(self, http_request, mock_stream):
+
         handler = mock_handler(http_request)
         handler.provider.download = MockCoroutine(return_value=mock_stream)
         handler.path = WaterButlerPath('/test_file')
@@ -142,11 +148,12 @@ class TestMetadataMixin:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("given_arg,expected_name,filtered_name", [
         (['résumé.doc'], 'r%C3%A9sum%C3%A9.doc', 'resume.doc'),
-        ([''], 'test_file', 'test_file'),
-        ([], 'test_file', 'test_file'),
+        ([''],           'test_file',            'test_file'),
+        ([],             'test_file',            'test_file'),
     ])
     async def test_download_file_with_display_name(self, http_request, mock_stream, given_arg,
                                                    expected_name, filtered_name):
+
         handler = mock_handler(http_request)
         handler.provider.download = MockCoroutine(return_value=mock_stream)
         handler.path = WaterButlerPath('/test_file')
@@ -163,6 +170,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_download_file_range_request_header(self, http_request, mock_partial_stream):
+
         handler = mock_handler(http_request)
         handler.request.headers['Range'] = 'bytes=10-100'
         handler.provider.download = MockCoroutine(return_value=mock_partial_stream)
@@ -176,6 +184,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_download_file_stream_redirect(self, http_request):
+
         handler = mock_handler(http_request)
         handler.provider.download = MockCoroutine(return_value='stream')
         await handler.download_file()
@@ -202,6 +211,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_file_metadata(self, http_request, mock_file_metadata):
+
         handler = mock_handler(http_request)
         handler.provider.metadata = MockCoroutine(return_value=mock_file_metadata)
 
@@ -213,6 +223,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_file_metadata_version(self, http_request, mock_file_metadata):
+
         handler = mock_handler(http_request)
         handler.provider.metadata = MockCoroutine(return_value=mock_file_metadata)
         handler.requested_version = 'version id'
@@ -226,6 +237,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_get_file_revisions_raw(self, http_request, mock_revision_metadata):
+
         handler = mock_handler(http_request)
         handler.provider.revisions = MockCoroutine(return_value=mock_revision_metadata)
 
@@ -237,6 +249,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_download_folder_as_zip(self, http_request, mock_stream):
+
         handler = mock_handler(http_request)
 
         handler.provider.zip = MockCoroutine(return_value=mock_stream)
@@ -252,6 +265,7 @@ class TestMetadataMixin:
 
     @pytest.mark.asyncio
     async def test_download_folder_as_zip_root(self, http_request, mock_stream):
+
         handler = mock_handler(http_request)
 
         handler.provider.zip = MockCoroutine(return_value=mock_stream)

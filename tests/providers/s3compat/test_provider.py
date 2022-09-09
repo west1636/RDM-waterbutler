@@ -1,30 +1,32 @@
-import aiohttpretty
+import os
+import io
+import xml
+import json
+import time
 import base64
 import hashlib
-import io
-import json
-import os
+import aiohttpretty
+from http import client
+from urllib import parse
+from unittest import mock
+
 import pytest
-import time
-import xml
 from boto.compat import BytesIO
 from boto.utils import compute_md5
-from collections import OrderedDict
-from http import client
-from unittest import mock
-from urllib import parse
+
 from waterbutler.core import streams, metadata, exceptions
 from waterbutler.core.path import WaterButlerPath
 from waterbutler.providers.s3compat import S3CompatProvider
 from waterbutler.providers.s3compat import settings as pd_settings
+
+from tests.utils import MockCoroutine
+from collections import OrderedDict
 from waterbutler.providers.s3compat.metadata import (S3CompatRevision,
                                                      S3CompatFileMetadata,
                                                      S3CompatFolderMetadata,
                                                      S3CompatFolderKeyMetadata,
                                                      S3CompatFileMetadataHeaders,
                                                      )
-
-from tests.utils import MockCoroutine
 
 
 @pytest.fixture
@@ -343,7 +345,7 @@ def folder_metadata(base_prefix):
 
 @pytest.fixture
 def folder_single_item_metadata(base_prefix):
-    return '''<?xml version="1.0" encoding="UTF-8"?>
+    return'''<?xml version="1.0" encoding="UTF-8"?>
     <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
         <Name>bucket</Name>
         <Prefix/>
@@ -548,10 +550,8 @@ def build_folder_params(path):
     prefix = path.full_path.lstrip('/')
     return {'prefix': prefix, 'delimiter': '/'}
 
-
 def build_folder_params_with_max_key(path):
     return {'prefix': path.path, 'delimiter': '/', 'max-keys': '1000'}
-
 
 def list_upload_chunks_body(parts_metadata):
     payload = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -772,14 +772,14 @@ class TestCRUD:
     @pytest.mark.aiohttpretty
     @pytest.mark.parametrize("display_name_arg,expected_name", [
         ('meow.txt', 'meow.txt'),
-        ('', 'muhtriangle'),
-        (None, 'muhtriangle'),
+        ('',         'muhtriangle'),
+        (None,       'muhtriangle'),
     ])
     async def test_download_with_display_name(self, provider, mock_time, display_name_arg, expected_name):
         path = WaterButlerPath('/muhtriangle', prepend=provider.prefix)
         response_headers = {
             'response-content-disposition':
-                'attachment; filename="{}"; filename*=UTF-8''{}'.format(expected_name, expected_name)
+            'attachment; filename="{}"; filename*=UTF-8''{}'.format(expected_name, expected_name)
         }
         url = provider.bucket.new_key(path.full_path).generate_url(100, response_headers=response_headers)
         aiohttpretty.register_uri('GET', url[:url.index('?')], body=b'delicious', auto_length=True)
@@ -900,6 +900,7 @@ class TestCRUD:
         provider._create_upload_session.assert_called_with(path)
         provider._upload_parts.assert_called_with(file_stream, path, upload_id)
         provider._complete_multipart_upload.assert_called_with(path, upload_id, headers_list)
+
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1104,7 +1105,7 @@ class TestCRUD:
         headers_list = [{k.upper(): v for k, v in headers.items()} for headers in headers_list]
         for i, part in enumerate(headers_list):
             payload += '<Part>'
-            payload += '<PartNumber>{}</PartNumber>'.format(i + 1)  # part number must be >= 1
+            payload += '<PartNumber>{}</PartNumber>'.format(i+1)  # part number must be >= 1
             payload += '<ETag>{}</ETag>'.format(xml.sax.saxutils.escape(part['ETAG']))
             payload += '</Part>'
         payload += '</CompleteMultipartUpload>'
@@ -1433,7 +1434,7 @@ class TestMetadata:
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
-    async def test_metadata_have_next_maker(self, provider, folder_metadata, mock_time):
+    async def test_metadata_have_next_token(self, provider, folder_metadata, mock_time):
         path = WaterButlerPath('/darp/')
         url = provider.bucket.generate_url(100)
         params = build_folder_params_with_max_key(path)
@@ -1448,7 +1449,7 @@ class TestMetadata:
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
-    async def test_metadata_folder_have_next_maker(self, provider, folder_metadata, mock_time):
+    async def test_metadata_folder_have_next_token(self, provider, folder_metadata, mock_time):
         path = WaterButlerPath('/darp/')
         url = provider.bucket.generate_url(100)
         params = build_folder_params_with_max_key(path)
@@ -1487,6 +1488,12 @@ class TestMetadata:
 
         assert isinstance(result, dict)
         assert len(result) == 2
+
+    # @pytest.mark.asyncio
+    # @pytest.mark.aiohttpretty
+    # async def test_must_have_slash(self, provider, folder_item_metadata, mock_time):
+    #     with pytest.raises(exceptions.InvalidPathError):
+    #         await provider.metadata('')
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty

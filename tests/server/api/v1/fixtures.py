@@ -1,16 +1,17 @@
-import json
 import os
-import pytest
 import sys
-from tornado.http1connection import HTTP1ConnectionParameters
-from tornado.httputil import HTTPServerRequest
-from tornado.web import HTTPError
+import json
 from unittest import mock
-from waterbutler.core.path import WaterButlerPath
-from waterbutler.server.api.v1.provider import ProviderHandler
-from waterbutler.tasks.exceptions import WaitTimeOutError
+
+import pytest
+from tornado.web import HTTPError
+from tornado.httputil import HTTPServerRequest
+from tornado.http1connection import HTTP1ConnectionParameters
 
 import waterbutler
+from waterbutler.core.path import WaterButlerPath
+from waterbutler.tasks.exceptions import WaitTimeOutError
+from waterbutler.server.api.v1.provider import ProviderHandler
 from tests.utils import (MockProvider, MockFileMetadata, MockFolderMetadata,
                          MockFileRevisionMetadata, MockCoroutine, MockRequestBody, MockStream)
 
@@ -187,42 +188,42 @@ def move_copy_args():
 @pytest.fixture
 def celery_src_copy_params():
     return {
-        'nid': 'test_source_resource',
-        'path': WaterButlerPath('/test_path', prepend=None),
-        'provider': {
-            'credentials': {},
-            'name': 'MockProvider',
-            'settings': {},
-            'auth': {}
-        }
+            'nid': 'test_source_resource',
+            'path': WaterButlerPath('/test_path', prepend=None),
+            'provider': {
+                'credentials': {},
+                'name': 'MockProvider',
+                'settings': {},
+                'auth': {}
+            }
     }
 
 
 @pytest.fixture
 def celery_dest_copy_params():
     return {
-        'nid': 'test_source_resource',
-        'path': WaterButlerPath('/test_path/', prepend=None),
-        'provider': {
-            'credentials': {},
-            'name': 'MockProvider',
-            'settings': {},
-            'auth': {}
-        }
+            'nid': 'test_source_resource',
+            'path': WaterButlerPath('/test_path/', prepend=None),
+            'provider': {
+                'credentials': {},
+                'name': 'MockProvider',
+                'settings': {},
+                'auth': {}
+            }
     }
 
 
 @pytest.fixture
 def celery_dest_copy_params_root():
     return {
-        'nid': 'test_source_resource',
-        'path': WaterButlerPath('/', prepend=None),
-        'provider': {
-            'credentials': {},
-            'name': 'MockProvider',
-            'settings': {},
-            'auth': {}
-        }
+            'nid': 'test_source_resource',
+            'path': WaterButlerPath('/', prepend=None),
+            'provider': {
+                'credentials': {},
+                'name': 'MockProvider',
+                'settings': {},
+                'auth': {}
+            }
     }
 
 

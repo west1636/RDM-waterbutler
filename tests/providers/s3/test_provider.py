@@ -1,15 +1,25 @@
-import aiohttpretty
+import os
+import io
+import xml
+import json
+import time
 import base64
 import hashlib
-import io
-import json
-import os
+import aiohttpretty
+from http import client
+from urllib import parse
+from unittest import mock
+
 import pytest
-import time
-import xml
 from boto.compat import BytesIO
 from boto.utils import compute_md5
-from http import client
+
+from waterbutler.providers.s3 import S3Provider
+from waterbutler.core.path import WaterButlerPath
+from waterbutler.core import streams, metadata, exceptions
+from waterbutler.providers.s3 import settings as pd_settings
+
+from tests.utils import MockCoroutine
 from tests.providers.s3.fixtures import (auth,
                                          settings,
                                          credentials,
@@ -35,14 +45,6 @@ from tests.providers.s3.fixtures import (auth,
                                          folder_single_item_metadata,
                                          file_metadata_headers_object,
                                          )
-from unittest import mock
-from urllib import parse
-from waterbutler.core import streams, metadata, exceptions
-from waterbutler.core.path import WaterButlerPath
-from waterbutler.providers.s3 import S3Provider
-from waterbutler.providers.s3 import settings as pd_settings
-
-from tests.utils import MockCoroutine
 
 
 @pytest.fixture
@@ -163,7 +165,6 @@ def list_upload_chunks_body(parts_metadata):
 def build_folder_params(path):
     return {'prefix': path.path, 'delimiter': '/'}
 
-
 def build_folder_params_with_max_key(path):
     return {'prefix': path.path, 'delimiter': '/', 'max-keys': '1000'}
 
@@ -173,20 +174,20 @@ class TestRegionDetection:
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
     @pytest.mark.parametrize("region_name,host", [
-        ('', 's3.amazonaws.com'),
-        ('EU', 's3-eu-west-1.amazonaws.com'),
-        ('us-east-2', 's3-us-east-2.amazonaws.com'),
-        ('us-west-1', 's3-us-west-1.amazonaws.com'),
-        ('us-west-2', 's3-us-west-2.amazonaws.com'),
-        ('ca-central-1', 's3-ca-central-1.amazonaws.com'),
-        ('eu-central-1', 's3-eu-central-1.amazonaws.com'),
-        ('eu-west-2', 's3-eu-west-2.amazonaws.com'),
+        ('',               's3.amazonaws.com'),
+        ('EU',             's3-eu-west-1.amazonaws.com'),
+        ('us-east-2',      's3-us-east-2.amazonaws.com'),
+        ('us-west-1',      's3-us-west-1.amazonaws.com'),
+        ('us-west-2',      's3-us-west-2.amazonaws.com'),
+        ('ca-central-1',   's3-ca-central-1.amazonaws.com'),
+        ('eu-central-1',   's3-eu-central-1.amazonaws.com'),
+        ('eu-west-2',      's3-eu-west-2.amazonaws.com'),
         ('ap-northeast-1', 's3-ap-northeast-1.amazonaws.com'),
         ('ap-northeast-2', 's3-ap-northeast-2.amazonaws.com'),
-        ('ap-south-1', 's3-ap-south-1.amazonaws.com'),
+        ('ap-south-1',     's3-ap-south-1.amazonaws.com'),
         ('ap-southeast-1', 's3-ap-southeast-1.amazonaws.com'),
         ('ap-southeast-2', 's3-ap-southeast-2.amazonaws.com'),
-        ('sa-east-1', 's3-sa-east-1.amazonaws.com'),
+        ('sa-east-1',      's3-sa-east-1.amazonaws.com'),
     ])
     async def test_region_host(self, auth, credentials, settings, region_name, host, mock_time):
         provider = S3Provider(auth, credentials, settings)
@@ -297,7 +298,7 @@ class TestCRUD:
     async def test_download(self, provider, mock_time):
         path = WaterButlerPath('/muhtriangle')
         response_headers = {'response-content-disposition':
-                                'attachment; filename="muhtriangle"; filename*=UTF-8\'\'muhtriangle'}
+                            'attachment; filename="muhtriangle"; filename*=UTF-8\'\'muhtriangle'}
         url = provider.bucket.new_key(path.path).generate_url(100,
                                                               response_headers=response_headers)
         aiohttpretty.register_uri('GET', url, body=b'delicious', auto_length=True)
@@ -312,7 +313,7 @@ class TestCRUD:
     async def test_download_range(self, provider, mock_time):
         path = WaterButlerPath('/muhtriangle')
         response_headers = {'response-content-disposition':
-                                'attachment; filename="muhtriangle"; filename*=UTF-8\'\'muhtriangle'}
+                            'attachment; filename="muhtriangle"; filename*=UTF-8\'\'muhtriangle'}
         url = provider.bucket.new_key(path.path).generate_url(100,
                                                               response_headers=response_headers)
         aiohttpretty.register_uri('GET', url, body=b'de', auto_length=True, status=206)
@@ -328,7 +329,7 @@ class TestCRUD:
     async def test_download_version(self, provider, mock_time):
         path = WaterButlerPath('/muhtriangle')
         response_headers = {'response-content-disposition':
-                                'attachment; filename="muhtriangle"; filename*=UTF-8\'\'muhtriangle'}
+                            'attachment; filename="muhtriangle"; filename*=UTF-8\'\'muhtriangle'}
         url = provider.bucket.new_key(path.path).generate_url(
             100,
             query_parameters={'versionId': 'someversion'},
@@ -345,8 +346,8 @@ class TestCRUD:
     @pytest.mark.aiohttpretty
     @pytest.mark.parametrize("display_name_arg,expected_name", [
         ('meow.txt', 'meow.txt'),
-        ('', 'muhtriangle'),
-        (None, 'muhtriangle'),
+        ('',         'muhtriangle'),
+        (None,       'muhtriangle'),
     ])
     async def test_download_with_display_name(self, provider, mock_time, display_name_arg,
                                               expected_name):
@@ -370,7 +371,7 @@ class TestCRUD:
     async def test_download_not_found(self, provider, mock_time):
         path = WaterButlerPath('/muhtriangle')
         response_headers = {'response-content-disposition':
-                                'attachment; filename="muhtriangle"; filename*=UTF-8\'\'muhtriangle'}
+                            'attachment; filename="muhtriangle"; filename*=UTF-8\'\'muhtriangle'}
         url = provider.bucket.new_key(path.path).generate_url(100,
                                                               response_headers=response_headers)
         aiohttpretty.register_uri('GET', url, status=404)
@@ -393,6 +394,7 @@ class TestCRUD:
                                  file_stream,
                                  file_header_metadata,
                                  mock_time):
+
         path = WaterButlerPath('/foobah')
         content_md5 = hashlib.md5(file_content).hexdigest()
         url = provider.bucket.new_key(path.path).generate_url(100, 'PUT')
@@ -416,6 +418,7 @@ class TestCRUD:
                                     file_stream,
                                     file_header_metadata,
                                     mock_time):
+
         # Set trigger for encrypt_key=True in s3.provider.upload
         provider.encrypt_uploads = True
         path = WaterButlerPath('/foobah')
@@ -430,7 +433,7 @@ class TestCRUD:
                 {'headers': file_header_metadata},
             ],
         )
-        headers = {'ETag': '"{}"'.format(content_md5)}
+        headers={'ETag': '"{}"'.format(content_md5)}
         aiohttpretty.register_uri('PUT', url, status=200, headers=headers)
 
         metadata, created = await provider.upload(file_stream, path)
@@ -556,6 +559,7 @@ class TestCRUD:
     @pytest.mark.aiohttpretty
     async def test_chunked_upload_upload_parts_remainder(self, provider,
                                                          upload_parts_headers_list):
+
         file_stream = streams.StringStream('abcdefghijklmnopqrst')
         assert file_stream.size == 20
         provider.CHUNK_SIZE = 9
@@ -633,7 +637,7 @@ class TestCRUD:
         headers_list = [{k.upper(): v for k, v in headers.items()} for headers in headers_list]
         for i, part in enumerate(headers_list):
             payload += '<Part>'
-            payload += '<PartNumber>{}</PartNumber>'.format(i + 1)  # part number must be >= 1
+            payload += '<PartNumber>{}</PartNumber>'.format(i+1)  # part number must be >= 1
             payload += '<ETag>{}</ETag>'.format(xml.sax.saxutils.escape(part['ETAG']))
             payload += '</Part>'
         payload += '</CompleteMultipartUpload>'
@@ -912,6 +916,7 @@ class TestCRUD:
         )
         aiohttpretty.register_uri('POST', delete_url, status=204)
 
+
         await provider.delete(path)
         assert aiohttpretty.has_call(method='GET', uri=query_url, params=params)
         aiohttpretty.register_uri('POST', delete_url, status=204)
@@ -998,7 +1003,7 @@ class TestCRUD:
     async def test_accepts_url(self, provider, mock_time):
         path = WaterButlerPath('/my-image')
         response_headers = {'response-content-disposition':
-                                'attachment; filename="my-image"; filename*=UTF-8\'\'my-image'}
+                            'attachment; filename="my-image"; filename*=UTF-8\'\'my-image'}
         url = provider.bucket.new_key(path.path).generate_url(100,
                                                               'GET',
                                                               response_headers=response_headers)
@@ -1009,13 +1014,13 @@ class TestCRUD:
 
 
 class TestMetadata:
+
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
     async def test_metadata_folder(self, provider, folder_metadata, mock_time):
         path = WaterButlerPath('/darp/')
         url = provider.bucket.generate_url(100)
         params = build_folder_params_with_max_key(path)
-
         aiohttpretty.register_uri('GET', url, params=params, body=folder_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
@@ -1026,22 +1031,7 @@ class TestMetadata:
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
-    async def test_metadata_have_next_maker(self, provider, folder_metadata, mock_time):
-        path = WaterButlerPath('/darp/')
-        url = provider.bucket.generate_url(100)
-        params = build_folder_params_with_max_key(path)
-
-        aiohttpretty.register_uri('GET', url, params=params, body=folder_metadata,
-                                  headers={'Content-Type': 'application/xml'})
-
-        result = await provider.metadata(path, revision=None, next_marker='')
-
-        assert isinstance(result, dict)
-        assert len(result) == 2
-
-    @pytest.mark.asyncio
-    @pytest.mark.aiohttpretty
-    async def test_metadata_folder_have_next_maker(self, provider, folder_metadata, mock_time):
+    async def test_metadata_folder_have_next_token(self, provider, folder_metadata, mock_time):
         path = WaterButlerPath('/darp/')
         url = provider.bucket.generate_url(100)
         params = build_folder_params_with_max_key(path)
@@ -1092,6 +1082,7 @@ class TestMetadata:
         aiohttpretty.register_uri('GET', url, params=params, body=folder_empty_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
+
         aiohttpretty.register_uri('HEAD', metadata_url, header=folder_empty_metadata,
                                   headers={'Content-Type': 'application/xml'})
 
@@ -1099,6 +1090,7 @@ class TestMetadata:
 
         assert isinstance(result, dict)
         assert len(result) == 2
+
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1148,6 +1140,7 @@ class TestMetadata:
                           file_stream,
                           file_header_metadata,
                           mock_time):
+
         path = WaterButlerPath('/foobah')
         content_md5 = hashlib.md5(file_content).hexdigest()
         url = provider.bucket.new_key(path.path).generate_url(100, 'PUT')
@@ -1303,6 +1296,7 @@ class TestOperations:
         aiohttpretty.register_uri('PUT', url, status=200)
 
         metadata, exists = await provider.intra_copy(provider, source_path, dest_path)
+
 
         provider._check_region.assert_called()
 
