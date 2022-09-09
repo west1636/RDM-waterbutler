@@ -8,7 +8,8 @@ from waterbutler.core.path import WaterButlerPath
 from tests.server.api.v1.utils import mock_handler
 from tests.server.api.v1.fixtures import (http_request, handler_auth, mock_stream,
                                           mock_partial_stream, mock_file_metadata,
-                                          mock_folder_children, mock_revision_metadata)
+                                          mock_folder_children, mock_revision_metadata,
+                                          mock_folder_children_provider_s3, auth, settings, credentials)
 from waterbutler.providers.s3 import S3Provider
 
 @pytest.fixture
