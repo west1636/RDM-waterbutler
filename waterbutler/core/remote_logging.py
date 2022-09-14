@@ -23,7 +23,6 @@ async def log_to_callback(action, source=None, destination=None, start_time=None
                           request={}):
     """PUT a logging payload back to the callback given by the auth provider."""
 
-    # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
     auth = getattr(destination, 'auth', source.auth)
     ref_url_domain = ''
     log_payload = {

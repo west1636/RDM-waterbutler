@@ -44,7 +44,6 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
     callback_log = True
 
     async def prepare(self, *args, **kwargs):
-        # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         method = self.request.method.lower()
 
         # TODO Find a nicer way to handle this
@@ -91,12 +90,10 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
                 path=self.path, version=self.requested_version,
                 callback_log=self.callback_log,
                 location_id=self.location_id, region_id=self.region_id)
-            # logger.debug(f'auth: {self.auth}')
             self.provider = utils.make_provider(
-                provider, self.auth['auth'], self.auth['credentials'], self.auth['settings'])
-            # logger.debug(f'provider: {self.provider}')
+                provider, self.auth['auth'],
+                self.auth['credentials'], self.auth['settings'])
             self.path = await self.provider.validate_v1_path(self.path, **self.arguments)
-            # logger.debug(f'path: {self.path}')
 
         self.target_path = None
 
@@ -126,7 +123,6 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
         Will redirect to a signed URL if possible and accept_url is not False
         :raises: MustBeFileError if path is not a file
         """
-        # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         if self.path.is_dir:
             return (await self.get_folder())
         return (await self.get_file())

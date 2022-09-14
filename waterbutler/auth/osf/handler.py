@@ -49,17 +49,15 @@ class OsfAuthHandler(BaseAuthHandler):
         return query_params
 
     async def make_request(self, params, headers, cookies):
-        # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         try:
             # Note: with simple request whose response is handled right afterwards without "being passed
             #       further along", use the context manager so WB doesn't need to handle the sessions.
-            # logger.debug(settings.API_URL)
             async with aiohttp.request(
-                    'get',
-                    settings.API_URL,
-                    params=params,
-                    headers=headers,
-                    cookies=cookies,
+                'get',
+                settings.API_URL,
+                params=params,
+                headers=headers,
+                cookies=cookies,
             ) as response:
                 if response.status != 200:
                     try:
@@ -74,7 +72,6 @@ class OsfAuthHandler(BaseAuthHandler):
                     data = jwt.decode(signed_jwt, settings.JWT_SECRET,
                                       algorithm=settings.JWT_ALGORITHM,
                                       options={'require_exp': True})
-                    # logger.debug(f'payload data: {data}')
                     return data['data']
                 except (jwt.InvalidTokenError, KeyError):
                     raise exceptions.AuthError(data, code=response.status)
@@ -108,7 +105,6 @@ class OsfAuthHandler(BaseAuthHandler):
     async def get(self, resource, provider, request, action=None, auth_type=AuthType.SOURCE,
                   path='', version=None, callback_log=True, location_id=None, region_id=None):
         """Used for v1"""
-        # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         method = request.method.lower()
 
         if method == 'post' and action:
@@ -174,7 +170,6 @@ class OsfAuthHandler(BaseAuthHandler):
         if resource == 'export_location':
             data['location_id'] = location_id
             data['region_id'] = region_id
-        # logger.debug(f'auth payload data: {data}')
 
         payload = await self.make_request(
             self.build_payload(data, cookie=cookie, view_only=view_only),

@@ -31,7 +31,6 @@ class AuthHandler:
                   path='', version=None,
                   callback_log=True,
                   location_id=None, region_id=None):
-        # logger.debug('----{}:{}::{} from {}:{}::{}'.format(*inspect_info(inspect.currentframe(), inspect.stack())))
         for extension in self.manager.extensions:
             credential = await extension.obj.get(
                 resource, provider, request,
