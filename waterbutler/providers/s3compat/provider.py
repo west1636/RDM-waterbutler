@@ -681,7 +681,7 @@ class S3CompatProvider(provider.BaseProvider):
         """
         if path.is_dir:
             if 'next_token' in kwargs:
-                return (await self._metadata_folder(path, kwargs['next_token']))
+                return await self._metadata_folder(path, kwargs['next_token'])
             return (await self._metadata_folder(path))
 
         return (await self._metadata_file(path, revision=revision))
@@ -738,6 +738,7 @@ class S3CompatProvider(provider.BaseProvider):
         contents = await resp.read()
 
         parsed = xmltodict.parse(contents, strip_whitespace=False)['ListBucketResult']
+
         next_token_string = parsed.get('NextMarker', '')
         contents = parsed.get('Contents', [])
         prefixes = parsed.get('CommonPrefixes', [])

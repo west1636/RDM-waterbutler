@@ -550,8 +550,10 @@ def build_folder_params(path):
     prefix = path.full_path.lstrip('/')
     return {'prefix': prefix, 'delimiter': '/'}
 
+
 def build_folder_params_with_max_key(path):
     return {'prefix': path.path, 'delimiter': '/', 'max-keys': '1000'}
+
 
 def list_upload_chunks_body(parts_metadata):
     payload = '''<?xml version="1.0" encoding="UTF-8"?>

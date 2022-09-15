@@ -165,6 +165,7 @@ def list_upload_chunks_body(parts_metadata):
 def build_folder_params(path):
     return {'prefix': path.path, 'delimiter': '/'}
 
+
 def build_folder_params_with_max_key(path):
     return {'prefix': path.path, 'delimiter': '/', 'max-keys': '1000'}
 

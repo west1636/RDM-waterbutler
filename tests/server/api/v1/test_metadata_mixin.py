@@ -12,6 +12,7 @@ from tests.server.api.v1.fixtures import (http_request, handler_auth, mock_strea
                                           mock_folder_children_provider_s3, auth, settings, credentials)
 from waterbutler.providers.s3 import S3Provider
 
+
 @pytest.fixture
 def provider(auth, credentials, settings):
     provider = S3Provider(auth, credentials, settings)
