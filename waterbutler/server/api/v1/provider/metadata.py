@@ -10,8 +10,6 @@ from waterbutler.server import utils
 from waterbutler.core import mime_types
 from waterbutler.core.utils import make_disposition
 from waterbutler.core.streams import ResponseStreamReader
-from waterbutler.providers.s3 import S3Provider
-from waterbutler.providers.s3compat import S3CompatProvider
 
 logger = logging.getLogger(__name__)
 
@@ -43,17 +41,18 @@ class MetadataMixin:
 
         version = self.requested_version
 
-        if 'next_token' in self.request.query_arguments and (isinstance(self.provider, S3Provider) or isinstance(self.provider, S3CompatProvider)):
+        next_token = None
+        if 'next_token' in self.request.query_arguments:
             next_token = self.request.query_arguments['next_token'][0].decode("utf-8")
-            data = await self.provider.metadata(self.path, version=version, revision=version, next_token=next_token)
-        else:
-            data = await self.provider.metadata(self.path, version=version, revision=version)
 
-        if isinstance(self.provider, S3Provider) or isinstance(self.provider, S3CompatProvider):
-            return self.write({'data': [x.json_api_serialized(self.resource) for x in data['data']],
-                               'next_token': data['next_token']})
+        data = await self.provider.metadata(self.path, version=version, revision=version, next_token=next_token)
+        data, token = self.provider.handle_data(data)
 
-        return self.write({'data': [x.json_api_serialized(self.resource) for x in data]})
+        ret = {'data': [x.json_api_serialized(self.resource) for x in data]}
+        if token is not None:
+            ret['next_token'] = token
+
+        return self.write(ret)
 
     async def get_file(self):
         if 'meta' in self.request.query_arguments:

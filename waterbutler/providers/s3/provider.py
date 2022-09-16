@@ -643,6 +643,11 @@ class S3Provider(provider.BaseProvider):
 
         return (await self._metadata_file(path, revision=revision))
 
+    def handle_data(self, data):
+        token = data.pop()
+
+        return data, token or ''
+
     async def create_folder(self, path, folder_precheck=True, **kwargs):
         """
         :param str path: The path to create a folder at
@@ -739,10 +744,8 @@ class S3Provider(provider.BaseProvider):
             else:
                 items.append(S3FileMetadata(content))
 
-        result = dict()
-        result['data'] = items
-        result['next_token'] = next_token_string
-        return result
+        items.append(next_token_string)
+        return items
 
     async def _check_region(self):
         """Lookup the region via bucket name, then update the host to match.

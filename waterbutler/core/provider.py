@@ -772,6 +772,9 @@ class BaseProvider(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    def handle_data(self, data):
+        return data, None
+
     @abc.abstractmethod
     async def validate_v1_path(self, path: str, **kwargs) -> wb_path.WaterButlerPath:
         """API v1 requires that requests against folder endpoints always end with a slash, and
