@@ -18,6 +18,7 @@ from waterbutler.server.auth import AuthHandler
 from waterbutler.core.log_payload import LogPayload
 from waterbutler.core.streams import RequestStreamReader
 from waterbutler.server.api.v1.provider.create import CreateMixin
+from waterbutler.auth.osf.handler import EXPORT_DATA_FAKE_NODE_ID
 from waterbutler.server.api.v1.provider.metadata import MetadataMixin
 from waterbutler.server.api.v1.provider.movecopy import MoveCopyMixin
 
@@ -66,7 +67,7 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
         self.resource = self.path_kwargs['resource']
 
         self.callback_log = self.get_query_argument('callback_log', default=True)
-        if self.resource == 'export_location':
+        if self.resource == EXPORT_DATA_FAKE_NODE_ID:
             self.location_id = self.get_query_argument('location_id', default=None)
             self.region_id = self.get_query_argument('region_id', default=None)
 

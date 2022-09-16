@@ -15,6 +15,7 @@ from waterbutler.settings import MFR_IDENTIFYING_HEADER
 
 
 JWE_KEY = jwe.kdf(settings.JWE_SECRET.encode(), settings.JWE_SALT.encode())
+EXPORT_DATA_FAKE_NODE_ID = 'export_location'
 
 logger = logging.getLogger(__name__)
 
@@ -167,7 +168,7 @@ class OsfAuthHandler(BaseAuthHandler):
             },
             'callback_log': callback_log,
         }
-        if resource == 'export_location':
+        if resource == EXPORT_DATA_FAKE_NODE_ID:
             data['location_id'] = location_id
             data['region_id'] = region_id
 
