@@ -66,7 +66,9 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
         provider = self.path_kwargs['provider']
         self.resource = self.path_kwargs['resource']
 
-        self.callback_log = self.get_query_argument('callback_log', default=True)
+        callback_log = self.get_query_argument('callback_log', default='True')
+        # as default callback_log is True
+        self.callback_log = False if isinstance(callback_log, str) and callback_log.lower() == 'false' else True
         if self.resource == EXPORT_DATA_FAKE_NODE_ID:
             self.location_id = self.get_query_argument('location_id', default=None)
             self.region_id = self.get_query_argument('region_id', default=None)
