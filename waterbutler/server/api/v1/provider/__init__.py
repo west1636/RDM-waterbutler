@@ -41,7 +41,6 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
     POST_VALIDATORS = {'put': 'postvalidate_put'}
     PATTERN = r'/resources/(?P<resource>(?:\w|\d)+)/providers/(?P<provider>(?:\w|\d)+)(?P<path>/.*/?)'
     location_id = None
-    region_id = None
     callback_log = True
 
     async def prepare(self, *args, **kwargs):
@@ -71,7 +70,6 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
         self.callback_log = False if isinstance(callback_log, str) and callback_log.lower() == 'false' else True
         if self.resource == EXPORT_DATA_FAKE_NODE_ID:
             self.location_id = self.get_query_argument('location_id', default=None)
-            self.region_id = self.get_query_argument('region_id', default=None)
 
         with sentry_sdk.configure_scope() as scope:
             scope.set_tag('resource.id', self.resource)
@@ -92,7 +90,7 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
                 self.resource, provider, self.request,
                 path=self.path, version=self.requested_version,
                 callback_log=self.callback_log,
-                location_id=self.location_id, region_id=self.region_id)
+                location_id=self.location_id)
             self.provider = utils.make_provider(
                 provider, self.auth['auth'],
                 self.auth['credentials'], self.auth['settings'])

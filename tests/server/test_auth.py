@@ -38,5 +38,5 @@ class TestAuthHandler(ServerTestCase):
         credential = await self.handler.get(resource, provider, self.request, action=action, auth_type=auth_type, location_id=1)
         self.mock_credential.obj.get.assert_called_with(resource, provider, self.request, action=action, auth_type=auth_type,
                                                         path='', version=None, callback_log=True,
-                                                        location_id=1, region_id=None)
+                                                        location_id=1)
         assert credential == {'storage': {}, 'callback_url': 'test.com'}

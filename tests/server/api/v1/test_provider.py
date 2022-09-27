@@ -68,7 +68,6 @@ class TestProviderHandler:
         assert handler.callback_log is False
         assert handler.resource == EXPORT_DATA_FAKE_NODE_ID
         assert handler.location_id == '1'
-        assert handler.region_id is None
         assert handler.auth == handler_auth
         assert handler.provider == MockProvider()
         assert handler.path == WaterButlerPath('/file', prepend=None)

@@ -138,7 +138,6 @@ class TestOsfAuthHandler(ServerTestCase):
             },
             'callback_log': True,
             'location_id': 1,
-            'region_id': None,
         }, cookie=None, view_only=None)
 
 
