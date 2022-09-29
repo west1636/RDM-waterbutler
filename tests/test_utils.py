@@ -12,7 +12,7 @@ class TestInspectInfo:
         stack_info = inspect.stack()
 
         # ('/code/tests/test_utils.py', 14, 'test_inspect_info', '/usr/local/lib/python3.6/site-packages/_pytest/python.py', 170, 'pytest_pyfunc_call')
-        ret, lineno = inspect_info(current_frame, stack_info), 14  # line 14
+        ret, lineno = inspect_info(current_frame, stack_info), 15  # line 15
         frame_info = inspect.getframeinfo(current_frame)
         stack_first = stack_info[1]
         assert isinstance(ret, tuple)

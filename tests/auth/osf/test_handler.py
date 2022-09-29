@@ -92,10 +92,10 @@ class TestOsfAuthHandler(ServerTestCase):
                         'referrer': None,
                         'origin': None,
                         'uri': settings.API_URL,
-                        'user_agent': None
+                        'user_agent': None,
                     },
                     'callback_log': True
-                }, cookie=None, view_only=None)
+                }, cookie='auth', view_only='1')
             else:
                 self.handler.build_payload.assert_called_with({
                     'nid': 'test',
@@ -107,10 +107,10 @@ class TestOsfAuthHandler(ServerTestCase):
                         'referrer': None,
                         'origin': None,
                         'uri': settings.API_URL,
-                        'user_agent': None
+                        'user_agent': None,
                     },
                     'callback_log': True
-                }, cookie=None, view_only=None)
+                }, cookie='auth', view_only='1')
 
     @tornado.testing.gen_test
     async def test_fake_resource__action_post_copy__with_auth_type_source(self):
