@@ -27,6 +27,7 @@ from waterbutler.providers.s3compat.metadata import (S3CompatRevision,
                                                      S3CompatFolderKeyMetadata,
                                                      S3CompatFileMetadataHeaders,
                                                      )
+from hmac import compare_digest
 
 
 @pytest.fixture
@@ -1422,6 +1423,13 @@ class TestMetadata:
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
+    async def test_handle_data(self, provider):
+        data = ['txt001.txt', 'abc']
+        result, token = provider.handle_data(data)
+        assert compare_digest(token, 'abc')
+
+    @pytest.mark.asyncio
+    @pytest.mark.aiohttpretty
     async def test_metadata_folder(self, provider, folder_metadata, mock_time):
         path = WaterButlerPath('/darp/', prepend=provider.prefix)
         url = provider.bucket.generate_url(100)
@@ -1431,8 +1439,12 @@ class TestMetadata:
 
         result = await provider.metadata(path)
 
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert isinstance(result, list)
+        assert len(result) == 4
+        assert result[0].name == '   photos'
+        assert result[1].name == 'my-image.jpg'
+        assert result[2].extra['md5'] == '1b2cf535f27731c974343645a3985328'
+        assert result[3] == ''
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1446,8 +1458,12 @@ class TestMetadata:
 
         result = await provider.metadata(path, revision=None, next_token='')
 
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert isinstance(result, list)
+        assert len(result) == 4
+        assert result[0].name == '   photos'
+        assert result[1].name == 'my-image.jpg'
+        assert result[2].extra['md5'] == '1b2cf535f27731c974343645a3985328'
+        assert result[3] == ''
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1461,8 +1477,12 @@ class TestMetadata:
 
         result = await provider._metadata_folder(path, next_token='')
 
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert isinstance(result, list)
+        assert len(result) == 4
+        assert result[0].name == '   photos'
+        assert result[1].name == 'my-image.jpg'
+        assert result[2].extra['md5'] == '1b2cf535f27731c974343645a3985328'
+        assert result[3] == ''
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1474,8 +1494,10 @@ class TestMetadata:
 
         result = await provider.metadata(path)
 
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert isinstance(result, list)
+        assert len(result) == 3
+        for fobj in result[:-1]:
+            assert fobj.name != path.full_path
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1488,8 +1510,9 @@ class TestMetadata:
 
         result = await provider.metadata(path)
 
-        assert isinstance(result, dict)
+        assert isinstance(result, list)
         assert len(result) == 2
+        assert result[0].kind == 'folder'
 
     # @pytest.mark.asyncio
     # @pytest.mark.aiohttpretty
@@ -1513,8 +1536,8 @@ class TestMetadata:
 
         result = await provider.metadata(path)
 
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert isinstance(result, list)
+        assert len(result) == 1
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1626,6 +1649,17 @@ class TestCreateFolder:
 
         with pytest.raises(exceptions.CreateFolderError) as e:
             await provider.create_folder(path)
+
+        assert e.value.code == 400
+        assert e.value.message == 'Path must be a directory'
+
+    @pytest.mark.asyncio
+    @pytest.mark.aiohttpretty
+    async def test_create_folder_with_folder_precheck_is_false(self, provider, mock_time):
+        path = WaterButlerPath('/alreadyexists', prepend=provider.prefix)
+
+        with pytest.raises(exceptions.CreateFolderError) as e:
+            await provider.create_folder(path, folder_precheck=False)
 
         assert e.value.code == 400
         assert e.value.message == 'Path must be a directory'

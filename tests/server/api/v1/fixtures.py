@@ -65,10 +65,7 @@ def mock_folder_children():
 
 @pytest.fixture()
 def mock_folder_children_provider_s3():
-    data = dict()
-    data['data'] = [MockFolderMetadata()]
-    data['next_token'] = 'aaaa'
-    return data
+    return [MockFolderMetadata(), 'aaaa']
 
 
 @pytest.fixture

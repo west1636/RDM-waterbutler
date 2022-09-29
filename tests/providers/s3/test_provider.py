@@ -45,6 +45,7 @@ from tests.providers.s3.fixtures import (auth,
                                          folder_single_item_metadata,
                                          file_metadata_headers_object,
                                          )
+from hmac import compare_digest
 
 
 @pytest.fixture
@@ -1018,6 +1019,13 @@ class TestMetadata:
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
+    async def test_handle_data(self, provider):
+        data = ['txt001.txt', 'abc']
+        result, token = provider.handle_data(data)
+        assert compare_digest(token, 'abc')
+
+    @pytest.mark.asyncio
+    @pytest.mark.aiohttpretty
     async def test_metadata_folder(self, provider, folder_metadata, mock_time):
         path = WaterButlerPath('/darp/')
         url = provider.bucket.generate_url(100)
@@ -1027,8 +1035,32 @@ class TestMetadata:
 
         result = await provider.metadata(path)
 
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert isinstance(result, list)
+        assert len(result) == 4
+        assert result[0].name == '   photos'
+        assert result[1].name == 'my-image.jpg'
+        assert result[2].extra['md5'] == '1b2cf535f27731c974343645a3985328'
+        assert result[2].extra['hashes']['md5'] == '1b2cf535f27731c974343645a3985328'
+        assert result[3] == ''
+
+    @pytest.mark.asyncio
+    @pytest.mark.aiohttpretty
+    async def test_metadata_have_next_token(self, provider, folder_metadata, mock_time):
+        path = WaterButlerPath('/darp/')
+        url = provider.bucket.generate_url(100)
+        params = build_folder_params_with_max_key(path)
+
+        aiohttpretty.register_uri('GET', url, params=params, body=folder_metadata,
+                                  headers={'Content-Type': 'application/xml'})
+
+        result = await provider.metadata(path, revision=None, next_token='')
+
+        assert isinstance(result, list)
+        assert len(result) == 4
+        assert result[0].name == '   photos'
+        assert result[1].name == 'my-image.jpg'
+        assert result[2].extra['md5'] == '1b2cf535f27731c974343645a3985328'
+        assert result[3] == ''
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1042,8 +1074,13 @@ class TestMetadata:
 
         result = await provider._metadata_folder(path, next_token='')
 
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert isinstance(result, list)
+        assert len(result) == 4
+        assert result[0].name == '   photos'
+        assert result[1].name == 'my-image.jpg'
+        assert result[2].extra['md5'] == '1b2cf535f27731c974343645a3985328'
+        assert result[2].extra['hashes']['md5'] == '1b2cf535f27731c974343645a3985328'
+        assert result[3] == ''
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1055,8 +1092,10 @@ class TestMetadata:
 
         result = await provider.metadata(path)
 
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert isinstance(result, list)
+        assert len(result) == 3
+        for fobj in result[:-1]:
+            assert fobj.name != path.path
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1069,8 +1108,9 @@ class TestMetadata:
 
         result = await provider.metadata(path)
 
-        assert isinstance(result, dict)
+        assert isinstance(result, list)
         assert len(result) == 2
+        assert result[0].kind == 'folder'
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1089,8 +1129,8 @@ class TestMetadata:
 
         result = await provider.metadata(path)
 
-        assert isinstance(result, dict)
-        assert len(result) == 2
+        assert isinstance(result, list)
+        assert len(result) == 1
 
 
     @pytest.mark.asyncio
