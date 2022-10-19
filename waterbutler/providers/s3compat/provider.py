@@ -98,13 +98,16 @@ class S3CompatProvider(provider.BaseProvider):
             host = m.group(1)
             port = int(m.group(2))
         is_secure = True if port == 443 or port == 10443 or port == 11443 else False 
+        validate_certs = False if port == 10443 or port == 11443 else True
         logger.info('is_secure:' + str(is_secure))
+        logger.info('validate_certs:' + str(validate_certs))
         self.connection = S3CompatConnection(credentials['access_key'],
                                              credentials['secret_key'],
                                              calling_format=OrdinaryCallingFormat(),
                                              host=host,
                                              port=port,
-                                             is_secure=is_secure)
+                                             is_secure=is_secure,
+                                             validate_certs=validate_certs)
         self.bucket = self.connection.get_bucket(settings['bucket'], validate=False)
         self.encrypt_uploads = self.settings.get('encrypt_uploads', False)
         self.prefix = settings.get('prefix', '')
