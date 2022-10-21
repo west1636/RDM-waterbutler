@@ -5,7 +5,7 @@ from urllib import parse
 import re
 import logging
 import xml.sax.saxutils
-
+import time
 import xmltodict
 
 from boto.compat import BytesIO  # type: ignore
@@ -188,6 +188,7 @@ class S3CompatProvider(provider.BaseProvider):
             throws=exceptions.IntraCopyError,
         )
         await resp.release()
+        time.sleep(3)
         logger.info('dest_provider::' + str(dest_provider))
         logger.info('dest_path::' + str(dest_path))
         return (await dest_provider.metadata(dest_path)), not exists
