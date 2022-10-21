@@ -281,13 +281,17 @@ class BaseProvider(metaclass=abc.ABCMeta):
         if byte_range:
             kwargs['headers']['Range'] = self._build_range_header(byte_range)
         connector = kwargs.pop('connector', None)
+       logger.info('connector::' +str(connector))
         session = self.get_or_create_session(connector=connector)
+
+       logger.info('session::' +str(session))
 
         method = method.upper()
         while retry >= 0:
             # Don't overwrite the callable ``url`` so that signed URLs are refreshed for every retry
             non_callable_url = url() if callable(url) else url
             non_callable_url = URL(non_callable_url, encoded=True)
+            logger.info('non_callable_url::' +str(non_callable_url))
             try:
                 self.provider_metrics.incr('requests.count')
                 # TODO: use a `dict` to select methods with either `lambda` or `functools.partial`
