@@ -163,16 +163,23 @@ class S3CompatProvider(provider.BaseProvider):
         exists = await dest_provider.exists(dest_path)
 
         dest_key = dest_provider.bucket.new_key(dest_path.full_path)
+        logger.info('dest_key::' + str(dest_key))
+        logger.info('dest_key.generate_url::' + str(dest_key.generate_url))
 
         # ensure no left slash when joining paths
         source_path = '/' + os.path.join(self.settings['bucket'], source_path.full_path)
         headers = {'x-amz-copy-source': parse.quote(source_path)}
+
+        logger.info('source_path::' + str(source_path))
+        logger.info('headers::' + str(headers))
+
         url = functools.partial(
             dest_key.generate_url,
             settings.TEMP_URL_SECS,
             'PUT',
             headers=headers,
         )
+        logger.info('url::' + str(url))
         resp = await self.make_request(
             'PUT', url,
             skip_auto_headers={'CONTENT-TYPE'},
@@ -181,6 +188,8 @@ class S3CompatProvider(provider.BaseProvider):
             throws=exceptions.IntraCopyError,
         )
         await resp.release()
+        logger.info('dest_provider::' + str(dest_provider))
+        logger.info('dest_path::' + str(dest_path))
         return (await dest_provider.metadata(dest_path)), not exists
 
     async def download(self, path, accept_url=False, revision=None, range=None, **kwargs):
@@ -684,6 +693,7 @@ class S3CompatProvider(provider.BaseProvider):
         :param WaterButlerPath path: The path to a key or folder
         :rtype: dict or list
         """
+        logger.info('metadata:path::' + str(path))
         if path.is_dir:
             return (await self._metadata_folder(path))
 
@@ -711,6 +721,9 @@ class S3CompatProvider(provider.BaseProvider):
     async def _metadata_file(self, path, revision=None):
         if revision == 'Latest':
             revision = None
+        logger.info('self.bucket.new_key(path.full_path).generate_url::' +str(self.bucket.new_key(path.full_path).generate_url))
+        logger.info('settings.TEMP_URL_SECS::' +str(settings.TEMP_URL_SECS))
+        logger.info('revision::' +str(revision))
         resp = await self.make_request(
             'HEAD',
             functools.partial(
