@@ -284,7 +284,7 @@ class BaseProvider(metaclass=abc.ABCMeta):
         logger.info('connector::' +str(connector))
         session = self.get_or_create_session(connector=connector)
 
-       logger.info('session::' +str(session))
+        logger.info('session::' +str(session))
 
         method = method.upper()
         while retry >= 0:
