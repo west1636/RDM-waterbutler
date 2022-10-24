@@ -281,7 +281,7 @@ class BaseProvider(metaclass=abc.ABCMeta):
         if byte_range:
             kwargs['headers']['Range'] = self._build_range_header(byte_range)
         connector = kwargs.pop('connector', None)
-       logger.info('connector::' +str(connector))
+        logger.info('connector::' +str(connector))
         session = self.get_or_create_session(connector=connector)
 
        logger.info('session::' +str(session))
