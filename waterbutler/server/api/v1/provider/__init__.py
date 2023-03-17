@@ -44,6 +44,7 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
     callback_log = True
 
     async def prepare(self, *args, **kwargs):
+        logger.info(f'self.path_kwargs in prepare init:{self.path_kwargs}')
         method = self.request.method.lower()
 
         # TODO Find a nicer way to handle this
@@ -96,6 +97,9 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
                 self.auth['credentials'], self.auth['settings'])
             self.path = await self.provider.validate_v1_path(self.path, **self.arguments)
 
+        logger.info(f'>>> self.path in  def put init: {self.path}')
+        logger.info(f'>>> self.provider in  def put init: {self.provider}')
+        logger.info(f'>>> self.auth in  def put init: {self.auth}')
         self.target_path = None
 
         # post-validator methods perform validations that expect that the path given in the url has
@@ -124,6 +128,7 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
         Will redirect to a signed URL if possible and accept_url is not False
         :raises: MustBeFileError if path is not a file
         """
+        logger.info('>>> Call def get init')
         if self.path.is_dir:
             return (await self.get_folder())
         return (await self.get_file())
