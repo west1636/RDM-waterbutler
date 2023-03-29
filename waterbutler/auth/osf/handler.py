@@ -50,8 +50,6 @@ class OsfAuthHandler(BaseAuthHandler):
         return query_params
 
     async def make_request(self, params, headers, cookies):
-        logger.info('>>> async def make_request in osf.handler')
-        logger.info(f'>>> params, headers, cookies: {params}, {headers}, {cookies}')
         try:
             # Note: with simple request whose response is handled right afterwards without "being passed
             #       further along", use the context manager so WB doesn't need to handle the sessions.
@@ -67,24 +65,16 @@ class OsfAuthHandler(BaseAuthHandler):
                         data = await response.json()
                     except (ValueError, ContentTypeError):
                         data = await response.read()
-                    logger.info(f'>>> Data when status !=200 from {settings.API_URL}: {data}')
                     raise exceptions.AuthError(data, code=response.status)
 
                 try:
-                    logger.info(f'>>> JWE_KEY: {JWE_KEY}')
-                    logger.info(f'>>> JWT_SECRET: {settings.JWT_SECRET}')
-                    logger.info(f'>>> JWE_SECRET: {settings.JWE_SECRET}')
-                    logger.info(f'>>> JWE_SALT: {settings.JWE_SALT}')
-                    logger.info(f'>>> JWT_ALGORITHM: {settings.JWT_ALGORITHM}')
                     raw = await response.json()
                     signed_jwt = jwe.decrypt(raw['payload'].encode(), JWE_KEY)
                     data = jwt.decode(signed_jwt, settings.JWT_SECRET,
                                       algorithm=settings.JWT_ALGORITHM,
                                       options={'require_exp': True})
-                    logger.info(f'>>> Data after decode by JWT success: {data}')
                     return data['data']
                 except (jwt.InvalidTokenError, KeyError):
-                    logger.info(f'>>> Data after decode by JWT raise exception: {data}')
                     raise exceptions.AuthError(data, code=response.status)
         except ClientError:
             raise exceptions.AuthError('Unable to connect to auth sever', code=503)

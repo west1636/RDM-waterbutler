@@ -47,8 +47,6 @@ class OSFStorageProvider(provider.BaseProvider):
         self.provider_name = settings['storage'].get('provider')
 
     async def make_signed_request(self, method, url, data=None, params=None, ttl=100, **kwargs):
-        logger.info('>>> make_signed_request in waterbutler/providers/osfstorage/provider.py')
-        logger.info(f'>>> url, data, params before build url: {url}, {data}, {params}')
         url, data, params = self.build_signed_url(
             method,
             url,
@@ -57,7 +55,6 @@ class OSFStorageProvider(provider.BaseProvider):
             ttl=ttl,
             **kwargs
         )
-        logger.info(f'>>> url, data, params after build url: {url}, {data}, {params}')
         return await self.make_request(method, url, data=data, params=params, **kwargs)
 
     async def validate_v1_path(self, path, **kwargs):
