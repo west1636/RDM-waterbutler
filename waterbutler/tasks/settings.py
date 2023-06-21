@@ -16,7 +16,7 @@ BROKER_URL = config.get(
     )
 )
 
-WAIT_TIMEOUT = int(config.get('WAIT_TIMEOUT', 20))
+WAIT_TIMEOUT = int(config.get('WAIT_TIMEOUT', 2000))
 WAIT_INTERVAL = float(config.get('WAIT_INTERVAL', 0.5))
 ADHOC_BACKEND_PATH = config.get('ADHOC_BACKEND_PATH', '/tmp')
 
