@@ -442,6 +442,9 @@ class BaseProvider(metaclass=abc.ABCMeta):
         if getattr(download_stream, 'name', None):
             dest_path.rename(download_stream.name)
 
+        if hasattr(download_stream, '_size') and download_stream._size is None:
+            download_stream._size = 0
+
         return await dest_provider.upload(download_stream, dest_path)
 
     async def _folder_file_op(self,
