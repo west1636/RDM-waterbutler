@@ -263,6 +263,8 @@ class BaseProvider(metaclass=abc.ABCMeta):
             raises an exception if the returned status code is not in it
         :keyword retry: ( :class:`int` ) An optional integer with default value 2 that determines
             how further to retry failed requests with the exponential back-off algorithm
+        :keyword force_retry_on: ( :class:`set` ) An optional set of integer that determines
+            status codes of failed requests but need to be retried
         :keyword throws: ( :class:`Exception` ) The exception to be raised from expects
         :return: The HTTP response
         :rtype: :class:`aiohttp.ClientResponse`
@@ -270,6 +272,7 @@ class BaseProvider(metaclass=abc.ABCMeta):
         :raises: :class:`.WaterButlerError` Raised if invalid HTTP method is provided
         """
 
+        force_retry_on = kwargs.pop('force_retry_on', set())
         kwargs['headers'] = self.build_headers(**kwargs.get('headers', {}))
         no_auth_header = kwargs.pop('no_auth_header', False)
         if no_auth_header:
@@ -322,16 +325,17 @@ class BaseProvider(metaclass=abc.ABCMeta):
                 else:
                     raise exceptions.WaterButlerError('Unsupported HTTP method ...')
                 self.provider_metrics.incr('requests.tally.ok')
-                if expects and response.status not in expects:
+                if response.status in force_retry_on or (expects and response.status not in expects):
                     unexpected = await exceptions.exception_from_response(response,
                                                                           error=throws, **kwargs)
                     raise unexpected
                 return response
             except throws as e:
                 self.provider_metrics.incr('requests.tally.nok')
-                if retry <= 0 or e.code not in self._retry_on:
+                if retry <= 0 or e.code not in force_retry_on.union(self._retry_on):
                     raise
-                await asyncio.sleep((1 + _retry - retry) * 2)
+                sleep_seconds = (1 + _retry - retry) * 2
+                await asyncio.sleep(sleep_seconds)
                 retry -= 1
 
     def request(self, *args, **kwargs):
