@@ -325,7 +325,7 @@ class BaseProvider(metaclass=abc.ABCMeta):
                 else:
                     raise exceptions.WaterButlerError('Unsupported HTTP method ...')
                 self.provider_metrics.incr('requests.tally.ok')
-                if response.status in force_retry_on or (expects and response.status not in expects):
+                if (retry > 0 and response.status in force_retry_on) or (expects and response.status not in expects):
                     unexpected = await exceptions.exception_from_response(response,
                                                                           error=throws, **kwargs)
                     raise unexpected
