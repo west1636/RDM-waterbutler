@@ -97,6 +97,7 @@ class BaseProvider(metaclass=abc.ABCMeta):
             ofter an OAuth 2 token
         :param settings: ( :class:`dict` ) Configuration settings for this provider,
             often folder or repo
+        :param retry_on: ( :class:`set` ) A set of HTTP status codes of failed requests that need to be retried
         :param is_celery_task: ( :class:`bool` ) Was this provider built inside a celery task?
         """
         self._retry_on = retry_on
@@ -264,7 +265,7 @@ class BaseProvider(metaclass=abc.ABCMeta):
         :keyword retry: ( :class:`int` ) An optional integer with default value 2 that determines
             how further to retry failed requests with the exponential back-off algorithm
         :keyword force_retry_on: ( :class:`set` ) An optional set of integer that determines
-            status codes of failed requests but need to be retried
+            status codes of failed requests that need to be retried
         :keyword throws: ( :class:`Exception` ) The exception to be raised from expects
         :return: The HTTP response
         :rtype: :class:`aiohttp.ClientResponse`
@@ -334,6 +335,7 @@ class BaseProvider(metaclass=abc.ABCMeta):
                 self.provider_metrics.incr('requests.tally.nok')
                 if retry <= 0 or e.code not in force_retry_on.union(self._retry_on):
                     raise
+                # Seconds equals twice the 'n' attempt
                 sleep_seconds = (1 + _retry - retry) * 2
                 await asyncio.sleep(sleep_seconds)
                 retry -= 1
