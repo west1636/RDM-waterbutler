@@ -139,8 +139,6 @@ class DropboxProvider(provider.BaseProvider):
             self.build_url('files', 'get_metadata'),
             {'path': self.folder.rstrip('/') + path.rstrip('/')},
             throws=core_exceptions.MetadataError,
-            retry=pd_settings.RETRY,
-            force_retry_on={404, 429},
         )
         explicit_folder = data['.tag'] == 'folder'
         if explicit_folder != implicit_folder:
@@ -518,12 +516,7 @@ class DropboxProvider(provider.BaseProvider):
             page_count = 0
             while has_more:
                 page_count += 1
-                data = await self.dropbox_request(
-                    url, body,
-                    throws=core_exceptions.MetadataError,
-                    retry=pd_settings.RETRY,
-                    force_retry_on={404, 429},
-                )
+                data = await self.dropbox_request(url, body, throws=core_exceptions.MetadataError)
                 for entry in data['entries']:
                     if entry['.tag'] == 'folder':
                         ret.append(DropboxFolderMetadata(entry, self.folder, self.NAME))
@@ -537,12 +530,7 @@ class DropboxProvider(provider.BaseProvider):
             self.metrics.add('metadata.folder.pages', page_count)
             return ret
 
-        data = await self.dropbox_request(
-            url, body,
-            throws=core_exceptions.MetadataError,
-            retry=pd_settings.RETRY,
-            force_retry_on={404, 429},
-        )
+        data = await self.dropbox_request(url, body, throws=core_exceptions.MetadataError)
         # Dropbox v2 API will not indicate file/folder if path "deleted"
         if data['.tag'] == 'deleted':
             raise core_exceptions.MetadataError(
@@ -586,7 +574,6 @@ class DropboxProvider(provider.BaseProvider):
             self.build_url('files', 'create_folder_v2'),
             {'path': path.full_path.rstrip('/')},
             throws=core_exceptions.CreateFolderError,
-            retry=pd_settings.RETRY,
             force_retry_on={409, 429},
         )
         return DropboxFolderMetadata(data['metadata'], self.folder, self.NAME)
