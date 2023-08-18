@@ -175,6 +175,8 @@ class S3CompatProvider(provider.BaseProvider):
             expects=(200, ),
             throws=exceptions.IntraCopyError,
         )
+        # patched by NetApp
+        await resp.read()
         await resp.release()
         return (await dest_provider.metadata(dest_path)), not exists
 
