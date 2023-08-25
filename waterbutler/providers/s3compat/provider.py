@@ -56,8 +56,7 @@ class S3CompatConnection(S3Connection):
         return url[:url.index('?')] if '?' in url else url
 
     def _required_auth_capability(self):
-        #return ['s3']
-        return ['hmac-v4-s3']
+        return ['s3']
 
 
 class S3CompatProvider(provider.BaseProvider):
